@@ -50,7 +50,12 @@
 /* top bar */
 .trisk .tr-top {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  padding: 16px 0; margin-bottom: 8px;
+  /* Stays at the top while scrolling; below the WordPress toolbar when that is shown. */
+  position: sticky; top: var(--wp-admin--admin-bar--height, 0px); z-index: 30;
+  margin: 0 -16px 8px; padding: 12px 16px;
+  background: color-mix(in srgb, var(--tr-bg) 92%, transparent);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--tr-line);
 }
 .trisk .tr-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; color: var(--tr-primary); }
 .trisk .tr-mark {
@@ -118,20 +123,38 @@
 .trisk .tr-chips li.lv3 { --dot: var(--tr-lv3); }
 .trisk .tr-chips li.lv4 { --dot: var(--tr-lv4); }
 
-/* cards */
-.trisk .tr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 16px; }
+/* country tiles */
+.trisk .tr-gridbar { display: flex; justify-content: flex-end; margin: -8px 0 8px; }
+.trisk .tr-small { min-height: 32px; padding: 6px 12px; font-size: .85rem; color: var(--tr-primary); border: 0; }
+.trisk .tr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 10px; }
 .trisk .tr-card { background: var(--tr-surface); border-radius: var(--tr-radius); box-shadow: var(--tr-shadow); overflow: hidden; display: flex; flex-direction: column; }
-.trisk .tr-card > header {
-  --lv: var(--tr-lv0);
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  padding: 14px 16px; background: var(--lv); color: #fff;
+.trisk .tr-card.is-open { grid-column: 1 / -1; }
+.trisk .tr-card { --lv: var(--tr-lv0); --on-lv: #fff; }
+.trisk .tr-card.lv1 { --lv: var(--tr-lv1); }
+.trisk .tr-card.lv2 { --lv: var(--tr-lv2); --on-lv: var(--tr-ink); }
+.trisk .tr-card.lv3 { --lv: var(--tr-lv3); }
+.trisk .tr-card.lv4 { --lv: var(--tr-lv4); }
+.trisk .tr-card h2 { margin: 0; font-size: inherit; flex: 1; display: flex; }
+.trisk .tr-card.is-open h2 { flex: none; }
+.trisk .tr-toggle {
+  display: grid; grid-template-columns: 1fr auto; grid-template-areas: "name chev" "level level" "badges badges";
+  align-content: start; gap: 4px 8px; width: 100%; min-height: 96px; padding: 12px 14px; margin: 0;
+  border: 0; border-radius: 0; background: var(--lv); color: var(--on-lv); text-align: left; line-height: 1.25;
 }
-.trisk .tr-card.lv1 > header { --lv: var(--tr-lv1); }
-.trisk .tr-card.lv2 > header { --lv: var(--tr-lv2); color: var(--tr-ink); }
-.trisk .tr-card.lv3 > header { --lv: var(--tr-lv3); }
-.trisk .tr-card.lv4 > header { --lv: var(--tr-lv4); }
-.trisk .tr-card h2 { font-size: 1.15rem; font-weight: 700; text-align: right; color: inherit; }
-.trisk .tr-level { font-weight: 700; font-size: .95rem; background: rgba(255, 255, 255, .22); padding: 4px 10px; border-radius: 999px; }
+.trisk .tr-toggle:hover { filter: brightness(1.06); }
+.trisk .tr-cname { grid-area: name; font-size: 1.1rem; font-weight: 700; }
+.trisk .tr-level { grid-area: level; justify-self: start; font-weight: 600; font-size: .85rem; background: rgba(255, 255, 255, .22); padding: 3px 9px; border-radius: 999px; }
+.trisk .tr-badges { grid-area: badges; display: flex; flex-wrap: wrap; gap: 4px; }
+.trisk .tr-badges:empty { display: none; }
+.trisk .tr-badge { font-size: .75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: rgba(0, 0, 0, .18); }
+.trisk .tr-badge.lv3, .trisk .tr-badge.lv4 { background: #fff; color: var(--tr-ink); }
+.trisk .tr-badge.lv3::before, .trisk .tr-badge.lv4::before { content: "▲ "; }
+.trisk .tr-badge.lv3::before { color: var(--tr-lv3); }
+.trisk .tr-badge.lv4::before { color: var(--tr-lv4); }
+.trisk .tr-chev { grid-area: chev; width: 10px; height: 10px; margin-top: 5px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .15s; }
+.trisk .tr-toggle[aria-expanded="true"] .tr-chev { transform: rotate(-135deg); margin-top: 9px; }
+.trisk .tr-card.is-open .tr-toggle { min-height: 0; }
+.trisk .tr-summary p { font-size: .93rem; margin: 6px 0; }
 .trisk .tr-body { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 10px; }
 .trisk .tr-note { padding: 8px 12px; border-radius: 10px; background: #fff4e5; border-left: 4px solid var(--tr-lv3); font-size: .93rem; }
 .trisk .tr-note.lv4 { background: #fdecec; border-left-color: var(--tr-lv4); }
@@ -140,7 +163,7 @@
 .trisk .tr-error { color: var(--tr-lv4); font-size: .92rem; }
 .trisk details summary { cursor: pointer; color: var(--tr-primary); font-weight: 600; font-size: .93rem; }
 .trisk details p { font-size: .92rem; margin: 8px 0; }
-.trisk .tr-card h3 { font-size: .95rem; font-weight: 700; margin-top: 6px; }
+.trisk .tr-body h3 { font-size: .95rem; font-weight: 700; margin-top: 6px; }
 .trisk .tr-news { list-style: none; margin: 0; padding: 0; }
 .trisk .tr-news li { padding: 8px 0; border-top: 1px solid var(--tr-line); font-size: .94rem; margin: 0; }
 .trisk .tr-news a { color: var(--tr-ink); text-decoration: none; }
@@ -169,3 +192,10 @@
   .trisk .tr-hero { padding: 22px 18px; }
   .trisk .tr-row > button { flex: 1 1 100%; }
 }
+
+/* installed app (bare template, templates/app.php) */
+body.trisk-standalone { margin: 0; background: #f4f6f8; }
+body.trisk-standalone .trisk { border-radius: 0; min-height: 100vh; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+body.trisk-standalone .trisk .tr-top { padding-top: calc(12px + env(safe-area-inset-top)); }
+
+@media (prefers-reduced-motion: reduce) { .trisk .tr-chev { transition: none; } }

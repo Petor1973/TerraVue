@@ -25,6 +25,11 @@ class Pwa {
 		return add_query_arg( 'travel_risk_pwa', 'manifest', home_url( '/' ) );
 	}
 
+	/** Start URL of the installed app: the app page in the bare app template (see Frontend). */
+	public static function start_url(): string {
+		return add_query_arg( 'tr_app', '1', app_url() );
+	}
+
 	public static function worker_url(): string {
 		return add_query_arg( 'travel_risk_pwa', 'sw', home_url( '/' ) );
 	}
@@ -55,7 +60,7 @@ class Pwa {
 			'short_name'       => setting( 'brand_name' ),
 			'description'      => 'Travel advice and security news per country.',
 			'id'               => wp_make_link_relative( app_url() ),
-			'start_url'        => app_url(),
+			'start_url'        => self::start_url(),
 			'scope'            => home_url( '/' ),
 			'display'          => 'standalone',
 			'background_color' => '#f4f6f8',
@@ -76,6 +81,7 @@ class Pwa {
 			'api'    => self::NS_MARKER,
 			'shell'  => array(
 				strtok( app_url(), '#' ),
+				self::start_url(),
 				plugins_url( 'assets/app.js', FILE ) . '?ver=' . VERSION,
 				plugins_url( 'assets/app.css', FILE ) . '?ver=' . VERSION,
 				plugins_url( 'data/countries.json', FILE ) . '?ver=' . VERSION,

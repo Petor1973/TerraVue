@@ -25,6 +25,18 @@ Code en commentaar: Engels.
   een Braziliaans bedrijf: niet gebruiken als naam, en de stijl niet zo dicht benaderen dat verwarring ontstaat.
 - Geen build-stap, geen Composer/npm-dependencies in de plugin. PHP 8.0+, WordPress 6.4+.
 
+## UI-richtlijnen
+
+- **Kopbalk** (merk, taalwissel, gebruikersmenu) staat altijd vast bovenaan (`position: sticky`).
+- **Landen** als compacte tegels (kleur, naam, niveau, badges); klikken klapt de volledige info uit.
+- **Geïnstalleerde app** opent `app-pagina?tr_app=1` met `templates/app.php`: geen thema-header/-footer.
+  Rekening houden met `env(safe-area-inset-*)` (notch, home-indicator).
+- **Navigatiemenu (toekomst):** zodra er meer schermen komen (bv. Landen, Meldingen, Instellingen) een
+  **tabbalk onderin** zoals in de App Store: vast aan de onderkant, deels transparant
+  (`backdrop-filter: blur`), icoon + kort label per tab, actieve tab in accentkleur, ruimte voor
+  `safe-area-inset-bottom`. Het gebruikersmenu rechtsboven blijft; de tabbalk vervangt het niet.
+  Op brede schermen (desktop) mag dezelfde navigatie in de kopbalk staan.
+
 ## Structuur
 
 ```
@@ -38,6 +50,7 @@ travel-risk/                 De plugin (deze map wordt gezipt en geüpload)
   includes/Frontend.php      Shortcode [travel_risk], assets, config naar JS
   includes/Privacy.php       AVG: exporter, eraser, voorgestelde privacytekst
   includes/Admin.php         Instellingen > Travel Risk
+  templates/app.php          Kale pagina voor de geïnstalleerde app (?tr_app=1)
   assets/app.js, app.css     Frontend (vanilla JS), vertalingen EN/DE/NL in app.js
   assets/sw.js               Service worker (alleen app-pagina, plugin-assets en eigen REST-routes)
   data/countries.json        ISO3/ISO2, namen en/de/nl, GOV.UK-slug

@@ -84,7 +84,7 @@ ok( 'news', 200 === $r->get_status() && 2 === count( $r->get_data()['items'] ), 
 
 // PWA
 $page = (int) TravelRisk\setting( 'app_page_id' );
-ok( 'manifest start_url is app page', $page ? TravelRisk\Pwa::manifest()['start_url'] === get_permalink( $page ) : TravelRisk\Pwa::manifest()['start_url'] === home_url( '/' ) );
+ok( 'manifest start_url is app page in app mode', TravelRisk\Pwa::manifest()['start_url'] === add_query_arg( 'tr_app', '1', $page ? get_permalink( $page ) : home_url( '/' ) ) );
 
 // privacy tools
 $export = TravelRisk\Privacy::export( $email );

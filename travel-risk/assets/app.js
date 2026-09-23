@@ -23,6 +23,7 @@
       updated: 'Updated {date}', source: 'Source: {source}', summary: 'Summary of the advice',
       fullAdvice: 'Full travel advice', newsTitle: 'News, last {h} hours', newsLoading: 'Looking for news…',
       newsNone: 'No reports about security incidents found.', loading: 'Loading travel advice…',
+      newsCount: '{n} news', parts: 'Parts: {level}', expandAll: 'Expand all', collapseAll: 'Collapse all',
       updatedAt: 'Updated at {time}.', offline: 'You are offline. Showing the last saved information.',
       account: 'Account', signOut: 'Sign out', deleteAccount: 'Delete account',
       deleteConfirm: 'Delete your account and all saved data? This cannot be undone.',
@@ -64,6 +65,7 @@
       updated: 'Aktualisiert am {date}', source: 'Quelle: {source}', summary: 'Zusammenfassung',
       fullAdvice: 'Vollständige Reise- und Sicherheitshinweise', newsTitle: 'Nachrichten, letzte {h} Stunden',
       newsLoading: 'Suche nach Nachrichten…', newsNone: 'Keine Meldungen über Sicherheitsvorfälle gefunden.',
+      newsCount: '{n} Meldungen', parts: 'Teilweise: {level}', expandAll: 'Alle aufklappen', collapseAll: 'Alle zuklappen',
       loading: 'Reisehinweise werden geladen…', updatedAt: 'Aktualisiert um {time}.',
       offline: 'Sie sind offline. Es werden die zuletzt gespeicherten Daten angezeigt.',
       account: 'Konto', signOut: 'Abmelden', deleteAccount: 'Konto löschen',
@@ -106,6 +108,7 @@
       updated: 'Gewijzigd op {date}', source: 'Bron: {source}', summary: 'Samenvatting van het advies',
       fullAdvice: 'Volledig reisadvies', newsTitle: 'Nieuws, afgelopen {h} uur', newsLoading: 'Nieuws zoeken…',
       newsNone: 'Geen berichten over veiligheidsincidenten gevonden.', loading: 'Reisadvies ophalen…',
+      newsCount: '{n} berichten', parts: 'Deels: {level}', expandAll: 'Alles uitklappen', collapseAll: 'Alles inklappen',
       updatedAt: 'Bijgewerkt om {time}.', offline: 'Je bent offline. De laatst bewaarde gegevens worden getoond.',
       account: 'Account', signOut: 'Uitloggen', deleteAccount: 'Account verwijderen',
       deleteConfirm: 'Je account en alle bewaarde gegevens verwijderen? Dit kan niet ongedaan worden gemaakt.',
@@ -153,6 +156,7 @@
     news: {},               // iso -> {loading} | data | {error}
     me: { loggedIn: false, registrationRequired: false },
     view: 'loading',        // loading | auth | sent | app
+    open: new Set(),        // countries shown with full details
     email: '', consent: false, sentTo: '', authError: '', menuOpen: false, installPrompt: null, updatedAt: null,
   };
 
@@ -263,6 +267,7 @@
     state.selected = state.selected.filter(x => x !== iso);
     delete state.advice[iso];
     delete state.news[iso];
+    state.open.delete(iso);
     saveCountries();
     render();
   }
@@ -443,12 +448,44 @@
       chips);
   }
 
+  function toggle(iso) {
+    if (state.open.has(iso)) state.open.delete(iso); else state.open.add(iso);
+    render();
+  }
+
+  function toggleAll() {
+    const allOpen = state.selected.every(iso => state.open.has(iso));
+    state.open = allOpen ? new Set() : new Set(state.selected);
+    render();
+  }
+
+  // Compact tile; clicking it opens the full advice and news below.
   function card(iso) {
     const a = state.advice[iso] || { loading: true };
     const n = state.news[iso];
     const lv = a.level || 0;
-    const body = h('div', { class: 'tr-body' });
+    const open = state.open.has(iso);
+    const newsItems = n && n.items ? n.items.length : 0;
 
+    const badges = h('span', { class: 'tr-badges' },
+      a.maxLevel > a.level && h('span', { class: 'tr-badge lv' + a.maxLevel }, t('parts', { level: t('level')[a.maxLevel] })),
+      newsItems > 0 && h('span', { class: 'tr-badge' }, t('newsCount', { n: newsItems })),
+      a.error && h('span', { class: 'tr-badge' }, '!'));
+
+    const head = h('h2', {},
+      h('button', {
+        type: 'button', id: 'tr-t-' + iso, class: 'tr-toggle',
+        'aria-expanded': String(open), 'aria-controls': 'tr-b-' + iso, onclick: () => toggle(iso),
+      },
+      h('span', { class: 'tr-cname' }, cname(iso)),
+      h('span', { class: 'tr-level' }, a.loading ? '…' : t('level')[lv]),
+      badges,
+      h('span', { class: 'tr-chev', 'aria-hidden': 'true' })));
+
+    const card = h('article', { class: 'tr-card lv' + lv + (open ? ' is-open' : ''), 'aria-busy': a.loading ? 'true' : null }, head);
+    if (!open) return card;
+
+    const body = h('div', { class: 'tr-body', id: 'tr-b-' + iso });
     if (a.loading) body.append(h('p', { class: 'tr-muted' }, t('loading')));
     else if (a.error) body.append(h('p', { class: 'tr-error' }, errText(a.error)));
     else {
@@ -458,8 +495,8 @@
       }
       body.append(h('p', { class: 'tr-meta' },
         [a.updated && t('updated', { date: fmtDate(a.updated) }), t('source', { source: a.sourceName })].filter(Boolean).join(' · ')));
-      body.append(h('details', {},
-        h('summary', {}, t('summary')),
+      body.append(h('div', { class: 'tr-summary' },
+        h('h3', {}, t('summary')),
         h('p', {}, a.summary || ''),
         a.url && h('a', { href: a.url, target: '_blank', rel: 'noopener' }, t('fullAdvice'), ' ↗')));
     }
@@ -473,12 +510,8 @@
         h('li', {}, h('a', { href: i.url, target: '_blank', rel: 'noopener nofollow' }, i.title),
           h('span', {}, [i.source, ago(i.date)].filter(Boolean).join(' · '))))));
     }
-
-    return h('article', { class: 'tr-card lv' + lv, 'aria-busy': a.loading ? 'true' : null },
-      h('header', {},
-        h('span', { class: 'tr-level' }, a.loading ? '…' : t('level')[lv]),
-        h('h2', {}, cname(iso))),
-      body);
+    card.append(body);
+    return card;
   }
 
   function summaryLine() {
@@ -497,6 +530,9 @@
         h('h1', {}, summaryLine()),
         h('p', { class: 'tr-lead' }, t('tagline'))),
       picker(),
+      sorted.length > 1 && h('div', { class: 'tr-gridbar' },
+        h('button', { type: 'button', class: 'tr-ghost tr-small', onclick: toggleAll },
+          state.selected.every(iso => state.open.has(iso)) ? t('collapseAll') : t('expandAll'))),
       h('section', { class: 'tr-grid', 'aria-live': 'polite' },
         sorted.length ? sorted.map(card) : h('div', { class: 'tr-empty' }, t('empty'))),
       state.updatedAt && h('p', { class: 'tr-muted tr-stamp' },
@@ -543,6 +579,11 @@
 
   // ---------------------------------------------------------------- start
   async function start() {
+    const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (standalone && cfg.appUrl && !new URLSearchParams(location.search).has('tr_app')) {
+      location.replace(cfg.appUrl + location.hash);
+      return;
+    }
     render();
     const token = (location.hash.match(/tr-login=([a-f0-9]{64})/) || [])[1];
     if (token) {

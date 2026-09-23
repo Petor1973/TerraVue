@@ -12,6 +12,12 @@ class Frontend {
 	public static function init(): void {
 		add_shortcode( 'travel_risk', array( self::class, 'shortcode' ) );
 		add_action( 'wp_head', array( self::class, 'head' ), 2 );
+		add_filter( 'template_include', array( self::class, 'template' ) );
+	}
+
+	/** The installed app (?tr_app=1) gets a bare page: no theme header, menu or footer. */
+	public static function template( string $template ): string {
+		return isset( $_GET['tr_app'] ) && self::is_app_page() ? DIR . '/templates/app.php' : $template; // phpcs:ignore WordPress.Security.NonceVerification
 	}
 
 	private static function is_app_page(): bool {
@@ -58,6 +64,7 @@ class Frontend {
 					'languages'  => LANGUAGES,
 					'countries'  => plugins_url( 'data/countries.json', FILE ) . '?ver=' . VERSION,
 					'worker'     => Pwa::worker_url(),
+					'appUrl'     => Pwa::start_url(),
 					'privacyUrl' => get_privacy_policy_url(),
 					'news'       => 'none' === setting( 'news_provider' ) ? false : setting( 'news_provider' ),
 				)

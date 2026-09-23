@@ -53,13 +53,29 @@ $buza = array(
 		'In het zuiden geldt kleurcode oranje. Voor de kuststrook geldt kleurcode geel.',
 		array( 2, 3 ),
 	),
+	'Israel: red for border areas (compound words) first, yellow for most of the country' => array(
+		'De kleurcode van het reisadvies is rood voor de grensgebieden tussen Israël en Gaza, Libanon en Egypte. Wat uw situatie ook is: reis niet hierheen. Per 8 september geldt kleurcode geel voor het grootste deel van Israël.',
+		array( 2, 4 ),
+	),
+	'red for "de Gazastrook" (compound with strook)' => array(
+		'Voor de Gazastrook geldt kleurcode rood. De kleurcode van het reisadvies voor Israël is oranje.',
+		array( 3, 4 ),
+	),
+	'"tussen X en Y" is a border area' => array(
+		'Het reisadvies is rood tussen Armenië en Azerbeidzjan. Voor Armenië is het reisadvies geel.',
+		array( 2, 4 ),
+	),
+	'country names are not regions (Oostenrijk)' => array(
+		'De kleurcode van het reisadvies voor Oostenrijk is groen.',
+		array( 1, 1 ),
+	),
 	'no colour at all' => array(
 		'Er is geen reisadvies beschikbaar.',
 		array( null, null ),
 	),
 );
 foreach ( $buza as $name => list( $text, $expected ) ) {
-	check( "buza: $name", Sources::buza_levels( $text ), $expected );
+	check( "buza: $name", array_slice( Sources::buza_levels( $text ), 0, 2 ), $expected );
 }
 
 $xml = '<document><introduction><![CDATA[<h2>In het kort</h2><p>De kleurcode van het reisadvies is groen.</p><div class="notification attention"><p>Meld je aan voor e-mail</p></div>]]></introduction>'
@@ -67,6 +83,7 @@ $xml = '<document><introduction><![CDATA[<h2>In het kort</h2><p>De kleurcode van
 $parsed = Sources::parse_buza( $xml );
 check( 'buza xml: summary without notification box', $parsed['summary'], 'In het kort De kleurcode van het reisadvies is groen.' );
 check( 'buza xml: level', array( $parsed['level'], $parsed['maxLevel'] ), array( 1, 1 ) );
+check( 'buza xml: basis is the deciding sentence', $parsed['basis'], 'In het kort De kleurcode van het reisadvies is groen.' );
 check( 'buza xml: url', $parsed['url'], 'https://www.nederlandwereldwijd.nl/reisadvies/noorwegen' );
 check( 'buza xml: updated', $parsed['updated'], '2026-09-01T10:00:00+00:00' );
 check( 'slug without diacritics', Sources::slug( 'Saoedi-Arabië' ), 'saoedi-arabie' );
@@ -113,7 +130,7 @@ check( 'aa: unknown country', Sources::aa_find( $list, 'XYZ' ), null );
 $aa = function ( array $flags ) {
 	return json_encode( array( 'response' => array( '222' => $flags + array(
 		'lastModified' => 1757500000000,
-		'content'      => '<h3>Aktuelles</h3><p>Vor Reisen in das Grenzgebiet wird gewarnt.</p>',
+		'content'      => '<h3>Aktuelles</h3><p>Hinweise zur Sicherheit im Land.</p>',
 	) ) ) );
 };
 $cases = array(
@@ -127,12 +144,27 @@ foreach ( $cases as $name => list( $flags, $expected ) ) {
 	$r = Sources::parse_aa( $aa( $flags ), '222' );
 	check( "aa: $name", array( $r['level'], $r['maxLevel'] ), $expected );
 }
-check( 'aa: summary', Sources::parse_aa( $aa( array() ), '222' )['summary'], 'Aktuelles Vor Reisen in das Grenzgebiet wird gewarnt.' );
+check( 'aa: summary', Sources::parse_aa( $aa( array() ), '222' )['summary'], 'Aktuelles Hinweise zur Sicherheit im Land.' );
+$aa_detail = json_encode( array( 'response' => array( '333' => array(
+	'lastModified' => 1757500000000,
+	'content'      => '<h3>Teilreisewarnung</h3><p>Vor Reisen in den Gazastreifen und in das Grenzgebiet zu Libanon wird gewarnt.</p><p>Von Reisen in die übrigen Landesteile von Israel wird abgeraten.</p>',
+) ) ) );
+$r = Sources::parse_aa( $aa_detail, '333', array( 'iso3CountryCode' => 'ISR', 'partialWarning' => true ) );
+check( 'aa: Israel - partial warning from the list, "abgeraten" for the rest from the text', array( $r['level'], $r['maxLevel'] ), array( 3, 4 ) );
+check( 'aa: basis names flag and sentence', $r['basis'], 'partialWarning · "Von Reisen in die übrigen Landesteile von Israel wird abgeraten."' );
+$r = Sources::parse_aa( json_encode( array( 'response' => array( '444' => array( 'content' => '<p>Von Reisen in die Grenzregion zu Kolumbien wird abgeraten.</p>' ) ) ) ), '444', array( 'warning' => 'false' ) );
+check( 'aa: regional "abgeraten" only raises the maximum; string "false" is not a flag', array( $r['level'], $r['maxLevel'] ), array( 1, 3 ) );
 check( 'aa: millisecond timestamp', Sources::parse_aa( $aa( array() ), '222' )['updated'], gmdate( 'c', 1757500000 ) );
 
 // ---------------------------------------------------------------- FCDO: two regional tiers (Ukraine)
-$r = Sources::parse_fcdo( $fcdo( array( 'avoid_all_travel_to_parts', 'avoid_all_but_essential_travel_to_parts' ) ), 'ukraine' );
-check( 'fcdo: two regional tiers -> rest of country essential only', array( $r['level'], $r['maxLevel'] ), array( 3, 4 ) );
+$fcdo_text = function ( array $status, string $warnings ) {
+	return json_encode( array( 'details' => array( 'alert_status' => $status, 'parts' => array( array( 'slug' => 'warnings-and-insurance', 'body' => "<p>$warnings</p>" ) ) ) ) );
+};
+$r = Sources::parse_fcdo( $fcdo_text( array( 'avoid_all_travel_to_parts', 'avoid_all_but_essential_travel_to_parts' ), 'FCDO advises against all travel to Gaza and within 500m of the border. FCDO advises against all but essential travel to parts of the West Bank.' ), 'israel' );
+check( 'fcdo: Israel - two regional tiers, rest of the country not covered', array( $r['level'], $r['maxLevel'] ), array( 2, 4 ) );
+check( 'fcdo: basis lists alert_status', $r['basis'], 'alert_status: avoid_all_travel_to_parts, avoid_all_but_essential_travel_to_parts' );
+$r = Sources::parse_fcdo( $fcdo_text( array( 'avoid_all_travel_to_parts', 'avoid_all_but_essential_travel_to_parts' ), 'FCDO advises against all travel to Crimea. FCDO advises against all but essential travel to the rest of Ukraine.' ), 'ukraine' );
+check( 'fcdo: Ukraine - text puts the rest of the country at essential only', array( $r['level'], $r['maxLevel'] ), array( 3, 4 ) );
 
 // ---------------------------------------------------------------- United States (RSS)
 $sau = array( 'iso3' => 'SAU', 'iso2' => 'SA', 'en' => 'Saudi Arabia' );

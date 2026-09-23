@@ -73,10 +73,21 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 
 1 groen = normale voorzorg, 2 geel = let op, 3 oranje = alleen noodzakelijke reizen, 4 rood = niet reizen.
 `level` = grootste deel van het land, `maxLevel` = strengste niveau ergens in het land.
-- FCDO: `details.alert_status` (whole_country / parts). Alleen regionale alerts -> level 2; beide regionale
-  treden (all + all-but-essential, bv. Oekraïne) -> level 3 voor de rest van het land.
-- AA: `warning` 4, `situationWarning` 3, `partialWarning` max 4, `situationPartWarning` max 3.
-- BuZa: geen kleurveld; per zin geparsed (`Sources::buza_levels`). **Bij twijfel: testgeval toevoegen.**
+- FCDO: `details.alert_status` (whole_country / parts). Alleen regionale alerts -> level 2, max volgens alert.
+  Alleen als de tekst "all but essential travel to the rest of ..." zegt (bv. Oekraïne) -> level 3. Twee
+  "to_parts"-statussen alléén betekenen dat níet (Israël, sept. 2026: alleen delen, rest geen advies).
+- AA: `warning` 4, `situationWarning` 3, `partialWarning` max 4, `situationPartWarning` max 3; vlaggen uit
+  lijst én detail (OF). `situation*` was bedoeld voor COVID; het gewone "Von Reisen … wird abgeraten" staat
+  alleen in de tekst → `aa_phrases()`: landelijk "abgeraten" = 3, "gewarnt" = 4; met gebiedswoord alleen max.
+- BuZa: geen kleurveld; per zin geparsed (`Sources::buza_levels`). Zin met "grootste deel/rest van" wint;
+  anders eerste zin zónder regio. Regio's ook in samenstellingen ("grensgebieden", "Gazastrook") en
+  "tussen X en Y". **Bij twijfel: testgeval toevoegen** (Israël-teksten staan als voorbeeld in de tests).
+- Elk advies heeft `basis`: de ruwe gegevens waarop het niveau berust (alert_status, AA-vlaggen + zin,
+  beslissende BuZa-zin, US-titel, CA advisory-state, AU-omschrijving). De app toont dit als "Waarom dit niveau",
+  zodat afwijkingen live te controleren zijn.
+- **Na een plugin-update** (`maybe_upgrade()`, versie in option `travel_risk_version`): gecachet advies en de
+  meldingen-nulmeting worden gewist, zodat parserverbeteringen geen valse "advies gewijzigd"-meldingen geven.
+  Versie dus bij elke wijziging in de interpretatie ophogen.
 - **Bron = keuze van de gebruiker** ("Advies van NL · UK · DE · US · CA · AU"), los van de UI-taal: het advies van de overheid
   van je nationaliteit/werkgever (daar hangt ook je reisverzekering aan). **Nooit op locatie** (AVG, geen
   tracking; en inhoudelijk fout: advies hangt af van wie je bent, niet waar je bent). Standaard uit de

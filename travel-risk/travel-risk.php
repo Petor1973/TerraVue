@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Terravue – Travel Risk Monitor
  * Description:       Official travel advice (NL, UK, DE, US, CA, AU) and recent security news per country, as an installable web app. Place the shortcode [travel_risk] on a page.
- * Version:           0.6.0
+ * Version:           0.6.1
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Peter Langerak
@@ -14,7 +14,7 @@ namespace TravelRisk;
 
 defined( 'ABSPATH' ) || exit;
 
-const VERSION = '0.6.0';
+const VERSION = '0.6.1';
 const FILE    = __FILE__;
 const DIR     = __DIR__;
 
@@ -129,6 +129,28 @@ function app_url(): string {
 	return $id && get_post_status( $id ) === 'publish' ? get_permalink( $id ) : home_url( '/' );
 }
 
+/**
+ * After an update the way levels are read may have changed. Clear cached advice and the
+ * notification baseline so users are not notified of changes that are really parser fixes;
+ * the next hourly check records a fresh baseline.
+ */
+function maybe_upgrade(): void {
+	if ( get_option( 'travel_risk_version' ) === VERSION ) {
+		return;
+	}
+	global $wpdb;
+	$names = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_travel_risk_' ) . '%' ) );
+	foreach ( $names as $name ) {
+		// Cached advice/news/feeds only (md5 keys); sign-in tokens and rate limits stay.
+		if ( preg_match( '/^_transient_(travel_risk_[a-f0-9]{32})$/', $name, $m ) ) {
+			delete_transient( $m[1] );
+		}
+	}
+	delete_option( Notify::OPT_SNAPSHOT );
+	update_option( 'travel_risk_version', VERSION, false );
+}
+add_action( 'init', __NAMESPACE__ . '\\maybe_upgrade', 5 );
+
 Auth::init();
 Notify::init();
 Rest::init();
@@ -146,6 +168,7 @@ function uninstall(): void {
 	delete_option( Notify::OPT_SNAPSHOT );
 	delete_option( Notify::OPT_LAST );
 	delete_option( 'travel_risk_gdelt_last' );
+	delete_option( 'travel_risk_version' );
 	Notify::unschedule();
 	delete_metadata( 'user', 0, Notify::META_PUSH, '', true );
 	delete_metadata( 'user', 0, Notify::META_EMAIL, '', true );

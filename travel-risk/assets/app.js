@@ -27,7 +27,7 @@
       menu: 'Menu', tabCountries: 'Countries', tabAlerts: 'Notifications',
       adviceFrom: 'Advice from',
       adviceHint: 'Choose the government whose advice you follow, usually that of your nationality or your employer. It applies to all countries and to notifications.',
-      otherSources: 'Other governments', inLanguage: 'Summary in {lang}.', followSource: 'Follow the advice of {source} (for all countries)',
+      otherSources: 'Other governments', inLanguage: 'Summary in {lang}.', followSource: 'Follow the advice of {source} (for all countries)', basis: 'Why this level',
       sourceLang: { buza: 'Dutch', fcdo: 'English', aa: 'German', usdos: 'English', gac: 'English', dfat: 'English' },
       consensus: '{n} governments: most say “{most}”; strictest “{max}” ({who}).', regionalUnknown: 'Stricter advice applies to parts of the country. Check the regional details in the full advice.', regionalBadge: 'Regional warnings',
       allSources: 'Sources and licences', notEndorsed: 'Not affiliated with or endorsed by any government.',
@@ -97,7 +97,7 @@
       menu: 'Menü', tabCountries: 'Länder', tabAlerts: 'Benachrichtigungen',
       adviceFrom: 'Hinweise von',
       adviceHint: 'Wählen Sie die Regierung, deren Hinweisen Sie folgen, meist die Ihrer Staatsangehörigkeit oder Ihres Arbeitgebers. Gilt für alle Länder und Benachrichtigungen.',
-      otherSources: 'Andere Regierungen', inLanguage: 'Zusammenfassung auf {lang}.', followSource: 'Hinweisen von {source} folgen (für alle Länder)',
+      otherSources: 'Andere Regierungen', inLanguage: 'Zusammenfassung auf {lang}.', followSource: 'Hinweisen von {source} folgen (für alle Länder)', basis: 'Grundlage',
       sourceLang: { buza: 'Niederländisch', fcdo: 'Englisch', aa: 'Deutsch', usdos: 'Englisch', gac: 'Englisch', dfat: 'Englisch' },
       consensus: '{n} Regierungen: die meisten sagen „{most}“; am strengsten „{max}“ ({who}).', regionalUnknown: 'Für Teile des Landes gelten strengere Hinweise. Prüfen Sie die regionalen Angaben im vollständigen Hinweis.', regionalBadge: 'Regionale Warnungen',
       allSources: 'Quellen und Lizenzen', notEndorsed: 'Nicht mit einer Regierung verbunden oder von ihr unterstützt.',
@@ -168,7 +168,7 @@
       menu: 'Menu', tabCountries: 'Landen', tabAlerts: 'Meldingen',
       adviceFrom: 'Advies van',
       adviceHint: 'Kies de overheid waarvan je het advies volgt, meestal die van je nationaliteit of werkgever. Geldt voor alle landen en voor meldingen.',
-      otherSources: 'Andere overheden', inLanguage: 'Samenvatting in het {lang}.', followSource: 'Advies van {source} volgen (voor alle landen)',
+      otherSources: 'Andere overheden', inLanguage: 'Samenvatting in het {lang}.', followSource: 'Advies van {source} volgen (voor alle landen)', basis: 'Waarom dit niveau',
       sourceLang: { buza: 'Nederlands', fcdo: 'Engels', aa: 'Duits', usdos: 'Engels', gac: 'Engels', dfat: 'Engels' },
       consensus: '{n} overheden: de meeste zeggen ‘{most}’; strengst ‘{max}’ ({who}).', regionalUnknown: 'Voor delen van het land geldt een strenger advies. Bekijk de regionale details in het volledige advies.', regionalBadge: 'Regionale waarschuwingen',
       allSources: 'Bronnen en licenties', notEndorsed: 'Niet verbonden aan of goedgekeurd door een overheid.',
@@ -787,6 +787,8 @@
       }
       body.append(h('p', { class: 'tr-meta' },
         [a.updated && t('updated', { date: fmtDate(a.updated) }), t('source', { source: a.sourceName })].filter(Boolean).join(' · ')));
+      // The raw data the level is based on, so users can check our reading of the source.
+      if (a.basis) body.append(h('p', { class: 'tr-meta tr-basis' }, h('b', {}, t('basis') + ': '), a.basis));
       const cmp = state.others[iso] || {};
       const verdict = consensus(a, cmp);
       if (verdict) body.append(h('p', { class: 'tr-consensus' }, verdict));
@@ -798,7 +800,8 @@
           const label = o.loading ? '…' : o.error ? '—' : t('level')[o.level || 0]
             + (o.maxLevel > o.level ? ' / ▲ ' + t('level')[o.maxLevel] : o.regional ? ' / ▲' : '');
           return h('button', {
-            type: 'button', class: 'tr-cmp lv' + lvl, title: t('followSource', { source: SOURCE[src] }), onclick: () => setSource(src),
+            type: 'button', class: 'tr-cmp lv' + lvl, onclick: () => setSource(src),
+            title: t('followSource', { source: SOURCE[src] }) + (o.basis ? '\n' + t('basis') + ': ' + o.basis : ''),
           }, h('b', {}, SOURCE_SHORT[src]), ' ', label);
         })));
       body.append(h('div', { class: 'tr-summary' },

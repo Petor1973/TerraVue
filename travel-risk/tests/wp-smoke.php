@@ -222,6 +222,17 @@ wp_set_current_user( 0 );
 call( 'POST', 'login', array( 'email' => get_option( 'admin_email' ), 'consent' => true ) );
 ok( 'no link for admin accounts', ! file_exists( WP_CONTENT_DIR . '/last-mail.txt' ) );
 
+// plugin update: cached advice and notification baseline are reset, tokens survive
+TravelRisk\cached( 'advice:fcdo:SAU', fn() => array( 'level' => 1 ) );
+set_transient( 'travel_risk_tok_' . str_repeat( 'b', 64 ), array( 'email' => 'x@example.com' ), 600 );
+update_option( TravelRisk\Notify::OPT_SNAPSHOT, array( 'fcdo:SAU' => array( 'level' => 1, 'maxLevel' => 1 ) ) );
+update_option( 'travel_risk_version', '0.0.1' );
+TravelRisk\maybe_upgrade();
+ok( 'update clears cached advice', false === get_transient( 'travel_risk_' . md5( 'advice:fcdo:SAU' ) ) );
+ok( 'update clears notification baseline', false === get_option( TravelRisk\Notify::OPT_SNAPSHOT ) );
+ok( 'update keeps sign-in tokens', false !== get_transient( 'travel_risk_tok_' . str_repeat( 'b', 64 ) ) );
+ok( 'version recorded', TravelRisk\VERSION === get_option( 'travel_risk_version' ) );
+
 $failed = $GLOBALS['travel_risk_failed'];
 echo $failed ? "\n$failed FAILED\n" : "\nall passed\n";
 exit( $failed ? 1 : 0 );

@@ -125,11 +125,12 @@ class Sources {
 		if ( '' === $intro ) {
 			throw new SourceException( 'unexpected_response' );
 		}
-		list( $level, $max ) = self::buza_levels( $intro );
+		list( $level, $max, $basis ) = self::buza_levels( $intro );
 		return array(
 			'source'   => 'buza',
 			'level'    => $level,
 			'maxLevel' => $max,
+			'basis'    => $basis,
 			'summary'  => self::shorten( $intro ),
 			'url'      => self::xml_field( $xml, 'canonical' ),
 			'updated'  => self::iso_date( self::xml_field( $xml, 'lastmodified' ) ),
@@ -137,22 +138,39 @@ class Sources {
 	}
 
 	/**
-	 * Works sentence by sentence. A sentence mentioning a colour code counts as
-	 * country-wide unless it names a region ("voor de strook langs de grens",
-	 * "in het noorden", "op de eilanden"); explicit country-wide wording
-	 * ("grootste deel", "hele land") always wins.
+	 * Works sentence by sentence.
+	 *  - A sentence with explicit country-wide wording ("grootste deel", "rest van het land")
+	 *    decides the level.
+	 *  - Otherwise the first colour sentence that names no region decides it. Regions are
+	 *    recognised by a preposition + area noun ("in het noorden", "op de eilanden") and by
+	 *    border/strip words, also inside compounds ("grensgebieden", "Gazastrook") and
+	 *    "tussen X en Y".
+	 *  - Only regional statements: the mildest one is the best guess for the rest.
 	 *
-	 * @return array{0:?int,1:?int} [level, maxLevel]
+	 * @return array{0:?int,1:?int,2:string} [level, maxLevel, deciding sentence]
 	 */
 	public static function buza_levels( string $text ): array {
 		$colours  = array( 'groen' => 1, 'geel' => 2, 'oranje' => 3, 'rood' => 4 );
 		$colour   = '/\b(groen|geel|oranje|rood)\b/iu';
-		$national = '/grootste deel|meeste gebieden|hele land|gehele land|rest van het land|overige delen/iu';
-		$regional = '/\b(voor|in|op|langs|rond|binnen|nabij)\s+(de|het|een)?\s*(\w+\s+)?(strook|gebied|gebieden|grens|grensgebied|regio|regio\'s|provincie|provincies|eiland|eilanden|noorden|zuiden|oosten|westen|noordoosten|noordwesten|zuidoosten|zuidwesten|deel|delen|stad|steden|kust|kuststrook|departement|departementen|staat|staten|district|districten)\b/iu';
+		$national = '/grootste deel|meeste gebieden|hele land|gehele land|rest van (het land|\p{Lu})|overige delen|overal in/iu';
+		$regional = array(
+			'/\b(voor|in|op|langs|rond|binnen|nabij)\s+(de|het|een)?\s*(\w+\s+)?(strook|gebied|gebieden|grens|regio|regio\'s|provincie|provincies|eiland|eilanden|noorden|zuiden|oosten|westen|noordoosten|noordwesten|zuidoosten|zuidwesten|deel|delen|stad|steden|kust|departement|departementen|staat|staten|district|districten)\b/iu',
+			'/\b\w*(strook|grens|grenzen|grensgebied|grensgebieden|grensstreek|grensregio|kilometer)\b/iu',
+			'/\btussen\s+\p{Lu}\w*\s+en\s+/u',
+		);
+		$is_regional = function ( string $sentence ) use ( $regional ) {
+			foreach ( $regional as $re ) {
+				if ( preg_match( $re, $sentence ) ) {
+					return true;
+				}
+			}
+			return false;
+		};
 
-		$country_wide = array();
-		$local        = array();
-		$all          = array();
+		$explicit = null;
+		$plain    = null;
+		$local    = array();
+		$all      = array();
 
 		foreach ( preg_split( '/(?<=[.!?])\s+/u', $text ) as $sentence ) {
 			if ( ! preg_match_all( $colour, $sentence, $m ) ) {
@@ -163,23 +181,20 @@ class Sources {
 			if ( ! preg_match( '/kleurcode|reisadvies/iu', $sentence ) ) {
 				continue;
 			}
-			if ( preg_match( $national, $sentence ) || ! preg_match( $regional, $sentence ) ) {
-				$country_wide[] = $found[0];
+			if ( preg_match( $national, $sentence ) ) {
+				$explicit = $explicit ?? array( $found[0], $sentence );
+			} elseif ( ! $is_regional( $sentence ) ) {
+				$plain = $plain ?? array( $found[0], $sentence );
 			} else {
 				$local = array_merge( $local, $found );
 			}
 		}
 
-		if ( $country_wide ) {
-			$level = $country_wide[0];
-		} elseif ( $local ) {
-			// Only regional statements: the mildest one is the best guess for the rest.
-			$level = min( $local );
-		} else {
-			$level = null;
-		}
-		$max = $all ? max( array_merge( $all, $level ? array( $level ) : array() ) ) : $level;
-		return array( $level, $max );
+		$pick  = $explicit ?? $plain;
+		$level = $pick ? $pick[0] : ( $local ? min( $local ) : null );
+		$max   = $all ? max( array_merge( $all, $level ? array( $level ) : array() ) ) : $level;
+		$basis = $pick ? trim( $pick[1] ) : ( $local ? 'regional statements only; mildest used' : '' );
+		return array( $level, $max, $basis );
 	}
 
 	// ------------------------------------------------------------------
@@ -201,15 +216,22 @@ class Sources {
 		if ( ! is_array( $data ) || ! isset( $data['details'] ) ) {
 			throw new SourceException( 'unexpected_response' );
 		}
-		$status = (array) ( $data['details']['alert_status'] ?? array() );
-		$has    = fn( $s ) => in_array( $s, $status, true );
+		$status   = (array) ( $data['details']['alert_status'] ?? array() );
+		$has      = fn( $s ) => in_array( $s, $status, true );
+		$warnings = '';
+		foreach ( (array) ( $data['details']['parts'] ?? array() ) as $part ) {
+			if ( 'warnings-and-insurance' === ( $part['slug'] ?? '' ) ) {
+				$warnings = self::text( $part['body'] ?? '' );
+			}
+		}
 
 		if ( $has( 'avoid_all_travel_to_whole_country' ) ) {
 			$level = 4;
 		} elseif ( $has( 'avoid_all_but_essential_travel_to_whole_country' ) ) {
 			$level = 3;
-		} elseif ( $has( 'avoid_all_travel_to_parts' ) && $has( 'avoid_all_but_essential_travel_to_parts' ) ) {
-			// Two regional tiers: the lower one covers what the higher one does not (e.g. Ukraine).
+		} elseif ( preg_match( '/advises? against all but essential travel to the (rest|remainder) of/i', $warnings ) ) {
+			// Parts-only alerts, but the text puts the rest of the country at "essential only"
+			// (e.g. Ukraine). Two "to parts" statuses alone do not mean that (e.g. Israel).
 			$level = 3;
 		} elseif ( $status ) {
 			$level = 2;
@@ -223,18 +245,13 @@ class Sources {
 			$max = max( $max, 3 );
 		}
 
-		$summary = trim( (string) ( $data['description'] ?? '' ) );
-		foreach ( (array) ( $data['details']['parts'] ?? array() ) as $part ) {
-			if ( 'warnings-and-insurance' === ( $part['slug'] ?? '' ) ) {
-				$summary = self::text( $part['body'] ?? '' );
-				break;
-			}
-		}
+		$summary = '' !== $warnings ? $warnings : trim( (string) ( $data['description'] ?? '' ) );
 
 		return array(
 			'source'   => 'fcdo',
 			'level'    => $level,
 			'maxLevel' => $max,
+			'basis'    => $status ? 'alert_status: ' . implode( ', ', $status ) : 'alert_status: none',
 			'summary'  => self::shorten( $summary ),
 			'url'      => 'https://www.gov.uk/foreign-travel-advice/' . $slug,
 			'updated'  => self::iso_date( $data['public_updated_at'] ?? null ),
@@ -247,13 +264,15 @@ class Sources {
 	// ------------------------------------------------------------------
 
 	private function aa( array $country ): array {
-		$id = self::aa_find( $this->feed( self::AA ), $country['iso3'] );
+		$list = $this->feed( self::AA );
+		$id   = self::aa_find( $list, $country['iso3'] );
 		if ( null === $id ) {
 			throw new SourceException( 'not_found' );
 		}
 		$detail = $this->get( self::AA . '/' . rawurlencode( $id ) );
 		self::expect_ok( $detail );
-		return self::parse_aa( $detail['body'], $id );
+		$summary = json_decode( $list, true )['response'][ $id ] ?? array();
+		return self::parse_aa( $detail['body'], $id, is_array( $summary ) ? $summary : array() );
 	}
 
 	public static function aa_find( string $json, string $iso3 ): ?string {
@@ -266,13 +285,21 @@ class Sources {
 		return null;
 	}
 
-	public static function parse_aa( string $json, string $id ): array {
+	/**
+	 * Flags from the list entry and the detail record are combined (either may carry them).
+	 * situationWarning / situationPartWarning were introduced for COVID-19; the everyday
+	 * "Von Reisen ... wird abgeraten" (advise against travel) only appears in the page text,
+	 * so that wording is read as well.
+	 *
+	 * @param array $summary The country's entry from the /travelwarning list.
+	 */
+	public static function parse_aa( string $json, string $id, array $summary = array() ): array {
 		$data  = json_decode( $json, true );
 		$entry = $data['response'][ $id ] ?? null;
 		if ( ! is_array( $entry ) ) {
 			throw new SourceException( 'unexpected_response' );
 		}
-		$flag = fn( $k ) => ! empty( $entry[ $k ] );
+		$flag = fn( $k ) => self::truthy( $entry[ $k ] ?? null ) || self::truthy( $summary[ $k ] ?? null );
 
 		if ( $flag( 'warning' ) ) {
 			$level = 4;
@@ -290,15 +317,57 @@ class Sources {
 			$max = max( $max, 3 );
 		}
 
-		$updated = $entry['lastModified'] ?? null;
+		$text   = self::text( $entry['content'] ?? '' );
+		$phrase = self::aa_phrases( $text );
+		$level  = max( $level, $phrase['level'] );
+		$max    = max( $max, $level, $phrase['max'] );
+
+		$basis = array_keys( array_filter( array_map( $flag, array_combine( self::AA_FLAGS, self::AA_FLAGS ) ) ) );
+		$basis = ( $basis ? implode( ', ', $basis ) : 'no warning flags' ) . ( $phrase['sentence'] ? ' · "' . $phrase['sentence'] . '"' : '' );
+
+		$updated = $entry['lastModified'] ?? ( $summary['lastModified'] ?? null );
 		return array(
 			'source'   => 'aa',
 			'level'    => $level,
 			'maxLevel' => $max,
-			'summary'  => self::shorten( self::text( $entry['content'] ?? '' ) ),
+			'basis'    => $basis,
+			'summary'  => self::shorten( $text ),
 			'url'      => 'https://www.auswaertiges-amt.de/de/ReiseUndSicherheit/reise-und-sicherheitshinweise',
 			'updated'  => is_numeric( $updated ) ? gmdate( 'c', (int) ( $updated / 1000 ) ) : self::iso_date( $updated ),
 		);
+	}
+
+	const AA_FLAGS = array( 'warning', 'partialWarning', 'situationWarning', 'situationPartWarning' );
+
+	/**
+	 * "Vor Reisen nach X wird gewarnt" = travel warning (4); "Von (nicht notwendigen) Reisen
+	 * nach X wird (dringend) abgeraten" = advise against travel (3). A sentence naming an area
+	 * (Gebiet, Grenze, Norden, Streifen, ...) only raises the regional maximum.
+	 *
+	 * @return array{level:int, max:int, sentence:string}
+	 */
+	public static function aa_phrases( string $text ): array {
+		$out      = array( 'level' => 0, 'max' => 0, 'sentence' => '' );
+		$regional = '/gebiet|region|grenz|provinz|streifen|westjordanland|golan|norden|süden|osten|westen|nördlich|südlich|östlich|westlich|umgebung|bezirk|distrikt|umkreis|kilometer|\bkm\b|stadt|städte|insel/iu';
+		foreach ( preg_split( '/(?<=[.!?])\s+/u', $text ) as $sentence ) {
+			if ( preg_match( '/\bReisen\b.*\bwird\s+gewarnt\b/iu', $sentence ) ) {
+				$step = 4;
+			} elseif ( preg_match( '/\bReisen\b.*\bwird\s+(dringend\s+)?abgeraten\b/iu', $sentence ) ) {
+				$step = 3;
+			} else {
+				continue;
+			}
+			$out['max'] = max( $out['max'], $step );
+			if ( ! preg_match( $regional, $sentence ) && $step > $out['level'] ) {
+				$out['level']    = $step;
+				$out['sentence'] = mb_substr( trim( $sentence ), 0, 160 );
+			}
+		}
+		return $out;
+	}
+
+	private static function truthy( $value ): bool {
+		return true === $value || 1 === $value || '1' === $value || ( is_string( $value ) && 'true' === strtolower( $value ) );
 	}
 
 	// ------------------------------------------------------------------
@@ -328,6 +397,7 @@ class Sources {
 				'source'   => 'usdos',
 				'level'    => $level,
 				'maxLevel' => $max,
+				'basis'    => $item['title'],
 				'summary'  => self::shorten( $text ),
 				'url'      => $item['link'],
 				'updated'  => self::iso_date( $item['pubDate'] ),
@@ -359,6 +429,7 @@ class Sources {
 			'source'   => 'gac',
 			'level'    => $level,
 			'maxLevel' => $level,
+			'basis'    => 'advisory-state ' . ( is_int( $state ) ? $state : '?' ) . ': ' . ( $eng['advisory-text'] ?? '' ) . ( ! empty( $entry['has-regional-advisory'] ) ? ' (+ regional advisories)' : '' ),
 			'regional' => ! empty( $entry['has-regional-advisory'] ) && $level < 4,
 			'summary'  => self::shorten( $text . '.' ),
 			'url'      => 'https://travel.gc.ca/destinations/' . ( $slug ?: '' ),
@@ -389,6 +460,7 @@ class Sources {
 			return array(
 				'source'   => 'dfat',
 				'level'    => $level,
+				'basis'    => $overall,
 				'maxLevel' => $level ? max( $level, $max ) : null,
 				'summary'  => self::shorten( trim( $overall . '. ' . $text, ' .' ) . '.' ),
 				'url'      => $item['link'],

@@ -58,7 +58,8 @@ travel-risk/                 De plugin (deze map wordt gezipt en geüpload)
   includes/Pwa.php           Manifest + service worker via /?travel_risk_pwa=manifest|sw
   includes/Frontend.php      Shortcode [travel_risk], assets, config naar JS
   includes/Privacy.php       AVG: exporter, eraser, voorgestelde privacytekst
-  includes/Admin.php         Instellingen > Travel Risk
+  includes/Admin.php         Instellingen > Travel Risk (+ testknoppen meldingen)
+  includes/Cli.php           WP-CLI: wp travel-risk check | test-notify
   templates/app.php          Kale pagina voor de geïnstalleerde app (?tr_app=1)
   assets/app.js, app.css     Frontend (vanilla JS), vertalingen EN/DE/NL in app.js
   assets/sw.js               Service worker (alleen app-pagina, plugin-assets en eigen REST-routes)
@@ -142,6 +143,15 @@ gebruiker. Eerste run per paar = alleen nulmeting. Bij een storing blijft de oud
 Pushdienst antwoordt 404/410 → apparaat wordt verwijderd. Uitloggen/account wissen verwijdert het apparaat.
 iOS: push alleen in de app op het beginscherm (iOS 16.4+). Echte cron aanbevolen (zie instellingenpagina).
 
+**Testen:** Instellingen → Travel Risk → "Test notifications": (1) test-"advies gewijzigd"-melding naar alleen
+het eigen account (`Notify::simulate`, gemarkeerd [Test], raakt nulmeting en andere gebruikers niet), (2) de
+uurlijkse controle nu draaien (zonder nieuws-prefetch, want die duurt minuten). Ook via WP-CLI:
+`wp travel-risk check [--skip-news]` en `wp travel-risk test-notify --to=<id|email> [--country=ISR]`
+(`--user` is een gereserveerde WP-CLI-optie). Server-cron zonder WP-Cron: `wp travel-risk check` elk uur.
+
+**Nieuws/GDELT:** traag en vaak time-outs. Daarom 30 s time-out, cache 150 min en prefetch van nieuws voor
+gevolgde landen (max. 30 per run, 6 s uit elkaar) tijdens de uurlijkse controle.
+
 ## Backlog (voorstel)
 
 1. Meldingen verfijnen: ook bij inhoudelijke wijziging zonder niveauwijziging (bv. `updated`), stille
@@ -150,7 +160,8 @@ iOS: push alleen in de app op het beginscherm (iOS 16.4+). Echte cron aanbevolen
 2. Echte bronnen valideren tegen live data (in deze ontwikkelomgeving was internet dicht): GOV.UK-slugs,
    AA-veldnamen, BuZa-teksten van alle landen door `buza_levels` halen en afwijkingen als test vastleggen;
    US/AU-landnamen tegen `name_matches()` (ontbrekende treffers → alias); licenties buza/aa/dfat bevestigen.
-3. Gelicentieerde nieuwsbron kiezen als de dienst commercieel wordt; nieuws per taal (DE/NL-media).
+3. Nieuwsbron: GDELT is onbetrouwbaar; Google News niet commercieel. Kiezen tussen officiële meldingen
+   (updates uit de overheidsfeeds zelf, GDACS voor rampen) en/of een betaalde nieuws-API met licentie.
 4. Regio's per land (bv. werklocatie in een regionaal waarschuwingsgebied).
 5. Definitieve naam + merkonderzoek (BOIP/EUIPO), logo en kleuren; daarna `brand_name` en kleuren instellen.
 6. Hosting: HTTPS verplicht (service worker, push), SMTP voor wp_mail, verwerkersovereenkomst met hoster.

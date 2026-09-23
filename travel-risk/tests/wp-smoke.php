@@ -201,6 +201,18 @@ ok( 'app cache refreshed by check', 4 === call( 'GET', 'advice/SAU', array( 'lan
 $msg = TravelRisk\Notify::message( 'de', TravelRisk\countries()['SAU'], array( 'level' => 2, 'maxLevel' => 2 ), array( 'level' => 2, 'maxLevel' => 4 ) );
 ok( 'message for regional change (DE)', 'Reisehinweis geändert: Saudi-Arabien' === $msg['title'] && str_contains( $msg['body'], 'Erhöhte Vorsicht (max) → Reisewarnung (max)' ), $msg );
 
+// test tool: simulated change goes to this user only, baseline untouched
+$GLOBALS['travel_risk_pushes'] = array();
+@unlink( WP_CONTENT_DIR . '/mail-log.txt' );
+$snap_before = get_option( TravelRisk\Notify::OPT_SNAPSHOT );
+$r = TravelRisk\Notify::simulate( $user->ID, TravelRisk\countries()['ISR'] );
+ok( 'simulate: push to own device and e-mail', 1 === $r['push']['sent'] && true === $r['email'], $r );
+ok( 'simulate: marked as test', str_contains( (string) @file_get_contents( WP_CONTENT_DIR . '/mail-log.txt' ), '[Test]' ) );
+ok( 'simulate: baseline untouched', $snap_before === get_option( TravelRisk\Notify::OPT_SNAPSHOT ) );
+$stats = TravelRisk\Notify::check( false );
+ok( 'check returns statistics', isset( $stats['pairs'], $stats['changes'], $stats['notified'] ) && $stats['pairs'] >= 2 && 0 === $stats['news'], $stats );
+ok( 'check stores last statistics', get_option( TravelRisk\Notify::OPT_LAST_STATS ) === $stats );
+
 // remove device via DELETE with JSON body
 $r = call( 'DELETE', 'push', array( 'endpoint' => 'https://fcm.googleapis.com/fcm/send/device-1' ) );
 ok( 'device removed', 0 === $r->get_data()['pushDevices'], $r->get_data() );

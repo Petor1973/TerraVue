@@ -13,6 +13,90 @@ class Admin {
 		add_action( 'admin_menu', array( self::class, 'menu' ) );
 		add_action( 'admin_init', array( self::class, 'register' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( FILE ), array( self::class, 'links' ) );
+		add_action( 'admin_post_travel_risk_check_now', array( self::class, 'check_now' ) );
+		add_action( 'admin_post_travel_risk_test_change', array( self::class, 'test_change' ) );
+	}
+
+	// ------------------------------------------------------------------ test tools
+
+	private static function guard( string $action ): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Forbidden', 403 );
+		}
+		check_admin_referer( $action );
+	}
+
+	private static function back( string $notice ): void {
+		set_transient( 'travel_risk_notice_' . get_current_user_id(), $notice, 5 * MINUTE_IN_SECONDS );
+		wp_safe_redirect( admin_url( 'options-general.php?page=travel-risk#tr-tests' ) );
+		exit;
+	}
+
+	/** Runs the hourly check now (without the slow news pre-fetch). Real notifications go out on real changes. */
+	public static function check_now(): void {
+		self::guard( 'travel_risk_check_now' );
+		$s = Notify::check( false );
+		self::back( sprintf(
+			'Check done: %d users with notifications, %d source/country pairs checked, %d source errors, %d level changes, %d notifications sent.',
+			$s['users'], $s['pairs'], $s['errors'], $s['changes'], $s['notified']
+		) );
+	}
+
+	/** Sends a sample "advice changed" notification to the current user only. */
+	public static function test_change(): void {
+		self::guard( 'travel_risk_test_change' );
+		$iso     = strtoupper( sanitize_key( wp_unslash( $_POST['country'] ?? '' ) ) );
+		$country = countries()[ $iso ] ?? null;
+		if ( ! $country ) {
+			self::back( 'Unknown country.' );
+		}
+		$r = Notify::simulate( get_current_user_id(), $country );
+		self::back( sprintf(
+			'Test notification for %s: push sent to %d device(s), %d failed; e-mail %s.',
+			$country['en'], $r['push']['sent'], $r['push']['failed'], $r['email'] ? 'sent' : 'not sent (e-mail notifications are off for your account)'
+		) );
+	}
+
+	private static function tests_section(): void {
+		$user    = get_current_user_id();
+		$devices = count( Notify::devices( $user ) );
+		$email   = '1' === get_user_meta( $user, Notify::META_EMAIL, true );
+		$stats   = get_option( Notify::OPT_LAST_STATS );
+		$notice  = get_transient( 'travel_risk_notice_' . $user );
+		if ( $notice ) {
+			delete_transient( 'travel_risk_notice_' . $user );
+			printf( '<div class="notice notice-info"><p>%s</p></div>', esc_html( $notice ) );
+		}
+		?>
+		<h2 id="tr-tests">Test notifications</h2>
+		<ol>
+			<li>Open <a href="<?php echo esc_url( app_url() ); ?>" target="_blank" rel="noopener">the app</a> while logged in here, go to <strong>Notifications</strong> and turn on push (and/or e-mail) for this device.</li>
+			<li>Use the buttons below. A test notification goes to <strong>your account only</strong> and does not affect other users or the baseline.</li>
+		</ol>
+		<p>Your account: <strong><?php echo (int) $devices; ?></strong> device(s) with push, e-mail notifications <strong><?php echo $email ? 'on' : 'off'; ?></strong>.</p>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-bottom:12px">
+			<input type="hidden" name="action" value="travel_risk_test_change">
+			<?php wp_nonce_field( 'travel_risk_test_change' ); ?>
+			<label>Country
+				<select name="country">
+					<?php foreach ( countries() as $iso => $c ) : ?>
+						<option value="<?php echo esc_attr( $iso ); ?>" <?php selected( $iso, 'ISR' ); ?>><?php echo esc_html( $c['en'] ); ?></option>
+					<?php endforeach; ?>
+				</select>
+			</label>
+			<?php submit_button( 'Send test "advice changed" notification to me', 'secondary', 'submit', false ); ?>
+		</form>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="travel_risk_check_now">
+			<?php wp_nonce_field( 'travel_risk_check_now' ); ?>
+			<?php submit_button( 'Run the hourly check now', 'secondary', 'submit', false ); ?>
+			<span class="description">Fetches the advice for all followed countries and notifies users of real level changes.</span>
+		</form>
+		<?php if ( is_array( $stats ) ) : ?>
+			<p class="description">Last check: <?php echo (int) $stats['pairs']; ?> pairs, <?php echo (int) $stats['errors']; ?> source errors, <?php echo (int) $stats['changes']; ?> changes, <?php echo (int) $stats['notified']; ?> notifications, news pre-fetched for <?php echo (int) $stats['news']; ?> countries.</p>
+		<?php endif; ?>
+		<p class="description">Also from the command line: <code>wp travel-risk check</code> and <code>wp travel-risk test-notify --to=&lt;id|email&gt; --country=ISR</code>.</p>
+		<?php
 	}
 
 	public static function links( array $links ): array {
@@ -128,6 +212,7 @@ class Admin {
 				</table>
 				<?php submit_button(); ?>
 			</form>
+			<?php self::tests_section(); ?>
 		</div>
 		<?php
 	}

@@ -36,7 +36,7 @@ class Notify {
 	);
 
 	public static function init(): void {
-		add_action( self::CRON, array( self::class, 'check' ) );
+		add_action( self::CRON, fn() => self::check() );
 		add_action( 'init', array( self::class, 'schedule' ) );
 	}
 
@@ -95,7 +95,10 @@ class Notify {
 
 	// ------------------------------------------------------------------ change detection
 
-	public static function check(): void {
+	/**
+	 * @return array{users:int, pairs:int, errors:int, changes:int, notified:int, news:int}
+	 */
+	public static function check( bool $prefetch = true ): array {
 		if ( function_exists( 'set_time_limit' ) ) {
 			@set_time_limit( 600 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
 		}
@@ -120,6 +123,7 @@ class Notify {
 		$old     = (array) get_option( self::OPT_SNAPSHOT, array() );
 		$new     = array();
 		$sources = sources();
+		$stats   = array( 'users' => count( $users ), 'pairs' => count( $pairs ), 'errors' => 0, 'changes' => 0, 'notified' => 0, 'news' => 0 );
 		foreach ( $pairs as $key => $followers ) {
 			list( $source, $iso ) = explode( ':', $key );
 			$country              = countries()[ $iso ] ?? null;
@@ -129,6 +133,7 @@ class Notify {
 			try {
 				$advice = $sources->advice( $source, $country );
 			} catch ( SourceException $e ) {
+				$stats['errors']++;
 				if ( isset( $old[ $key ] ) ) {
 					$new[ $key ] = $old[ $key ]; // keep the baseline through a temporary outage
 				}
@@ -139,13 +144,58 @@ class Notify {
 
 			$before = $old[ $key ] ?? null;
 			if ( $before && ( $before['level'] !== $advice['level'] || $before['maxLevel'] !== $advice['maxLevel'] ) ) {
+				$stats['changes']++;
 				foreach ( $followers as $id ) {
 					self::notify_user( $id, $country, $before, $advice );
+					$stats['notified']++;
 				}
 			}
 		}
 		update_option( self::OPT_SNAPSHOT, $new, false );
 		update_option( self::OPT_LAST, time(), false );
+
+		$isos           = array_unique( array_map( fn( $k ) => explode( ':', $k )[1], array_keys( $pairs ) ) );
+		$stats['news']  = $prefetch ? self::prefetch_news( $isos ) : 0;
+		update_option( self::OPT_LAST_STATS, $stats, false );
+		return $stats;
+	}
+
+	const OPT_LAST_STATS = 'travel_risk_last_stats';
+	const PREFETCH_MAX   = 30; // GDELT allows one call per ~6 s; keeps the hourly run under a few minutes
+
+	/** Warms the news cache for followed countries; returns how many were fetched. */
+	public static function prefetch_news( array $isos ): int {
+		if ( 'none' === setting( 'news_provider' ) ) {
+			return 0;
+		}
+		$done = 0;
+		foreach ( array_slice( array_values( $isos ), 0, self::PREFETCH_MAX ) as $iso ) {
+			$country = countries()[ $iso ] ?? null;
+			if ( ! $country ) {
+				continue;
+			}
+			try {
+				Rest::fetch_news( $country );
+				$done++;
+			} catch ( SourceException $e ) {
+				continue; // tried again next hour; visitors can still trigger a fetch
+			}
+		}
+		return $done;
+	}
+
+	/**
+	 * Test tool: sends a sample "advice changed" notification (push + e-mail if on) to one user,
+	 * marked as a test, without touching the baseline or other users.
+	 *
+	 * @return array{push:array{sent:int,failed:int}, email:bool}
+	 */
+	public static function simulate( int $user_id, array $country ): array {
+		$lang   = language( get_user_meta( $user_id, Auth::META_LANG, true ) );
+		$msg    = self::message( $lang, $country, array( 'level' => 2, 'maxLevel' => 3 ), array( 'level' => 3, 'maxLevel' => 4 ) );
+		$prefix = array( 'en' => '[Test] ', 'de' => '[Test] ', 'nl' => '[Test] ' )[ $lang ];
+		$msg['title'] = $prefix . $msg['title'];
+		return self::notify_user( $user_id, $country, array( 'level' => 2, 'maxLevel' => 3 ), array( 'level' => 3, 'maxLevel' => 4 ), $msg );
 	}
 
 	/** @return array{title:string, body:string} */
@@ -172,10 +222,11 @@ class Notify {
 		return array( 'title' => sprintf( $text[0], $name ), 'body' => $body );
 	}
 
-	private static function notify_user( int $user_id, array $country, array $before, array $after ): void {
-		$lang = language( get_user_meta( $user_id, Auth::META_LANG, true ) );
-		$msg  = self::message( $lang, $country, $before, $after );
-		self::push_user( $user_id, $msg + array( 'tag' => $country['iso3'] ) );
+	/** @return array{push:array{sent:int,failed:int}, email:bool} */
+	private static function notify_user( int $user_id, array $country, array $before, array $after, ?array $msg = null ): array {
+		$lang   = language( get_user_meta( $user_id, Auth::META_LANG, true ) );
+		$msg    = $msg ?? self::message( $lang, $country, $before, $after );
+		$result = array( 'push' => self::push_user( $user_id, $msg + array( 'tag' => $country['iso3'] ) ), 'email' => false );
 
 		if ( '1' === get_user_meta( $user_id, self::META_EMAIL, true ) ) {
 			$user   = get_user_by( 'id', $user_id );
@@ -185,9 +236,10 @@ class Notify {
 				'nl' => "Open de app: %s\n\nJe ontvangt dit omdat e-mailmeldingen aan staan. Zet ze uit in de app onder Meldingen.",
 			)[ $lang ];
 			if ( $user ) {
-				wp_mail( $user->user_email, setting( 'brand_name' ) . ': ' . $msg['title'], $msg['body'] . "\n\n" . sprintf( $footer, app_url() ) );
+				$result['email'] = (bool) wp_mail( $user->user_email, setting( 'brand_name' ) . ': ' . $msg['title'], $msg['body'] . "\n\n" . sprintf( $footer, app_url() ) );
 			}
 		}
+		return $result;
 	}
 
 	/** @return array{sent:int, failed:int} */

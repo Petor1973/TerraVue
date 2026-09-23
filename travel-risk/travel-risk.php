@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Terravue – Travel Risk Monitor
  * Description:       Official travel advice (NL, UK, DE, US, CA, AU) and recent security news per country, as an installable web app. Place the shortcode [travel_risk] on a page.
- * Version:           0.6.1
+ * Version:           0.6.2
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Peter Langerak
@@ -14,7 +14,7 @@ namespace TravelRisk;
 
 defined( 'ABSPATH' ) || exit;
 
-const VERSION = '0.6.1';
+const VERSION = '0.6.2';
 const FILE    = __FILE__;
 const DIR     = __DIR__;
 
@@ -31,6 +31,11 @@ require_once DIR . '/includes/Pwa.php';
 require_once DIR . '/includes/Frontend.php';
 require_once DIR . '/includes/Privacy.php';
 require_once DIR . '/includes/Admin.php';
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once DIR . '/includes/Cli.php';
+	\WP_CLI::add_command( 'travel-risk', Cli::class );
+}
 
 function defaults(): array {
 	return array(
@@ -84,11 +89,11 @@ function language( $value ): string {
 }
 
 /** HTTP for Sources/News, through the WordPress HTTP API. */
-function http_get( string $url ): array {
+function http_get( string $url, int $timeout = 15 ): array {
 	$res = wp_remote_get(
 		$url,
 		array(
-			'timeout'    => 15,
+			'timeout'    => $timeout,
 			'user-agent' => 'TravelRisk/' . VERSION . '; ' . home_url( '/' ),
 		)
 	);
@@ -107,20 +112,20 @@ function sources(): Sources {
 }
 
 /** Caches successful results only; failures are retried on the next request. */
-function cached( string $key, callable $fn ) {
+function cached( string $key, callable $fn, ?int $minutes = null ) {
 	$key = 'travel_risk_' . md5( $key );
 	$hit = get_transient( $key );
 	if ( false !== $hit ) {
 		return $hit;
 	}
 	$value = $fn();
-	cache_put( $key, $value, false );
+	cache_put( $key, $value, false, $minutes );
 	return $value;
 }
 
-function cache_put( string $key, $value, bool $hash = true ): void {
+function cache_put( string $key, $value, bool $hash = true, ?int $minutes = null ): void {
 	$key = $hash ? 'travel_risk_' . md5( $key ) : $key;
-	set_transient( $key, $value, max( 5, (int) setting( 'cache_minutes' ) ) * MINUTE_IN_SECONDS );
+	set_transient( $key, $value, max( 5, $minutes ?? (int) setting( 'cache_minutes' ) ) * MINUTE_IN_SECONDS );
 }
 
 /** URL of the page holding the app (used as PWA start_url and magic link target). */
@@ -167,6 +172,7 @@ function uninstall(): void {
 	delete_option( Notify::OPT_VAPID );
 	delete_option( Notify::OPT_SNAPSHOT );
 	delete_option( Notify::OPT_LAST );
+	delete_option( Notify::OPT_LAST_STATS );
 	delete_option( 'travel_risk_gdelt_last' );
 	delete_option( 'travel_risk_version' );
 	Notify::unschedule();

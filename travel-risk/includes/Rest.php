@@ -27,6 +27,7 @@ class Rest {
 	const NS            = 'travel-risk/v1';
 	const MAX_COUNTRIES = 60;
 	const GDELT_SPACING = 6; // seconds between GDELT calls; it answers 429 below ~5 s
+	const NEWS_CACHE_MINUTES = 150; // longer than the hourly pre-fetch, so the cache never runs dry
 
 	public static function init(): void {
 		add_action( 'rest_api_init', array( self::class, 'routes' ) );
@@ -163,21 +164,32 @@ class Rest {
 		if ( 'none' === $provider ) {
 			return new \WP_Error( 'news_disabled', 'news_disabled', array( 'status' => 404 ) );
 		}
-		$hours = (int) setting( 'news_hours' );
 		try {
-			$data = cached(
-				"news:$provider:$hours:{$country['iso3']}",
-				function () use ( $provider, $country, $hours ) {
-					if ( 'gdelt' === $provider ) {
-						self::gdelt_throttle();
-					}
-					return ( new News( __NAMESPACE__ . '\\http_get' ) )->fetch( $provider, $country, $hours );
-				}
-			);
+			$data = self::fetch_news( $country );
 		} catch ( SourceException $e ) {
 			return self::fail( $e );
 		}
-		return rest_ensure_response( $data + array( 'hours' => $hours ) );
+		return rest_ensure_response( $data + array( 'hours' => (int) setting( 'news_hours' ) ) );
+	}
+
+	/**
+	 * News for one country, cached for NEWS_CACHE_MINUTES. The hourly check pre-fetches news for
+	 * followed countries (Notify::prefetch_news), so visitors rarely wait for GDELT, which is slow.
+	 */
+	public static function fetch_news( array $country ): array {
+		$provider = setting( 'news_provider' );
+		$hours    = (int) setting( 'news_hours' );
+		return cached(
+			"news:$provider:$hours:{$country['iso3']}",
+			function () use ( $provider, $country, $hours ) {
+				if ( 'gdelt' === $provider ) {
+					self::gdelt_throttle();
+				}
+				$http = fn( string $url ) => http_get( $url, 'gdelt' === $provider ? 30 : 15 );
+				return ( new News( $http ) )->fetch( $provider, $country, $hours );
+			},
+			self::NEWS_CACHE_MINUTES
+		);
 	}
 
 	/** Spaces GDELT calls across all visitors; waits at most GDELT_SPACING seconds. */

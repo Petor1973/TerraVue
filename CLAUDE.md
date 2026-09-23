@@ -58,7 +58,7 @@ travel-risk/                 De plugin (deze map wordt gezipt en geüpload)
   includes/Pwa.php           Manifest + service worker via /?travel_risk_pwa=manifest|sw
   includes/Frontend.php      Shortcode [travel_risk], assets, config naar JS
   includes/Privacy.php       AVG: exporter, eraser, voorgestelde privacytekst
-  includes/Admin.php         Instellingen > Travel Risk (+ testknoppen meldingen)
+  includes/Admin.php         Eigen adminmenu "<merknaam>": Settings | Notifications (status + tests) | Sources (licenties + live brontest)
   includes/Cli.php           WP-CLI: wp travel-risk check | test-notify
   templates/app.php          Kale pagina voor de geïnstalleerde app (?tr_app=1)
   assets/app.js, app.css     Frontend (vanilla JS), vertalingen EN/DE/NL in app.js
@@ -143,7 +143,7 @@ gebruiker. Eerste run per paar = alleen nulmeting. Bij een storing blijft de oud
 Pushdienst antwoordt 404/410 → apparaat wordt verwijderd. Uitloggen/account wissen verwijdert het apparaat.
 iOS: push alleen in de app op het beginscherm (iOS 16.4+). Echte cron aanbevolen (zie instellingenpagina).
 
-**Testen:** Instellingen → Travel Risk → "Test notifications": (1) test-"advies gewijzigd"-melding naar alleen
+**Testen:** adminmenu Terravue → Notifications: (1) test-"advies gewijzigd"-melding naar alleen
 het eigen account (`Notify::simulate`, gemarkeerd [Test], raakt nulmeting en andere gebruikers niet), (2) de
 uurlijkse controle nu draaien (zonder nieuws-prefetch, want die duurt minuten). Ook via WP-CLI:
 `wp travel-risk check [--skip-news]` en `wp travel-risk test-notify --to=<id|email> [--country=ISR]`

@@ -1,7 +1,7 @@
 === Terravue – Travel Risk Monitor ===
 Requires at least: 6.4
 Requires PHP: 8.0
-Stable tag: 0.6.3
+Stable tag: 0.7.0
 License: Proprietary
 
 Official travel advice and recent security news per country, as an installable web app (PWA).
@@ -40,7 +40,8 @@ home screen (iOS 16.4+).
 3. Settings > Privacy: set a privacy policy page. The suggested text for this plugin is available there.
 4. Make sure the site sends e-mail reliably (SMTP plugin) and runs on HTTPS (required for the PWA and push).
    For reliable notifications, replace WP-Cron by a server cron job (see the settings page).
-5. Settings > Travel Risk: product name, colours, news source.
+5. Admin menu Terravue (your product name): Settings (name, colours, news), Notifications (status of the
+   hourly check, test notifications) and Sources (licences, test all sources live for one country).
 
 == Privacy ==
 

@@ -65,6 +65,7 @@ class Frontend {
 					'countries'  => plugins_url( 'data/countries.json', FILE ) . '?ver=' . VERSION,
 					'worker'     => Pwa::worker_url(),
 					'appUrl'     => Pwa::start_url(),
+					'icon'       => plugins_url( 'assets/icons/icon-192.png', FILE ),
 					'privacyUrl' => get_privacy_policy_url(),
 					'news'       => 'none' === setting( 'news_provider' ) ? false : setting( 'news_provider' ),
 				)

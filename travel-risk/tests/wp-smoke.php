@@ -169,10 +169,15 @@ $raise = function ( $pre, $args, $url ) {
 	return array( 'headers' => array(), 'body' => $body, 'response' => array( 'code' => 200, 'message' => 'OK' ), 'cookies' => array(), 'filename' => null );
 };
 add_filter( 'pre_http_request', $raise, 6, 3 );
+@unlink( WP_CONTENT_DIR . '/mail-log.txt' );
 TravelRisk\Notify::check();
 remove_filter( 'pre_http_request', $raise, 6 );
-ok( 'change: one push sent', 1 === count( $GLOBALS['travel_risk_pushes'] ), count( $GLOBALS['travel_risk_pushes'] ) );
-$mail = (string) @file_get_contents( WP_CONTENT_DIR . '/last-mail.txt' );
+ok( 'change: push sent to this user\'s device', 1 === count( array_filter( $GLOBALS['travel_risk_pushes'], fn( $p ) => str_contains( $p['url'], 'device-1' ) ) ), count( $GLOBALS['travel_risk_pushes'] ) );
+// Other test users may follow the same country; find this user's mail in the log.
+$mail = '';
+foreach ( explode( "\n-----\n", (string) @file_get_contents( WP_CONTENT_DIR . '/mail-log.txt' ) ) as $m ) {
+	$mail = str_starts_with( $m, $email ) ? $m : $mail;
+}
 ok( 'change: e-mail sent', str_starts_with( $mail, $email ) && str_contains( $mail, 'Travel advice changed: Saudi Arabia' ) && str_contains( $mail, 'Exercise caution → Do not travel' ), $mail );
 ok( 'snapshot updated', 4 === get_option( TravelRisk\Notify::OPT_SNAPSHOT )['fcdo:SAU']['level'] );
 ok( 'app cache refreshed by check', 4 === call( 'GET', 'advice/SAU', array( 'lang' => 'en' ) )->get_data()['level'] );

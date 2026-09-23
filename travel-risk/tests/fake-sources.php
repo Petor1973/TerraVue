@@ -15,4 +15,9 @@ add_filter('pre_http_request', function ($pre, $args, $url) {
   if (str_contains($url, 'gdeltproject')) return $ok(json_encode(['articles'=>[['title'=>'Drone intercepted over eastern province','url'=>'https://example.com/1','domain'=>'example.com','seendate'=>gmdate('Ymd\THis\Z', time()-7200)],['title'=>'Protest reported in capital','url'=>'https://example.com/2','domain'=>'news.example','seendate'=>gmdate('Ymd\THis\Z', time()-20000)]]]));
   return $pre;
 }, 10, 3);
-add_filter('pre_wp_mail', function ($null, $atts) { file_put_contents(WP_CONTENT_DIR.'/last-mail.txt', $atts['to']."\n".$atts['subject']."\n".$atts['message']); return true; }, 10, 2);
+add_filter('pre_wp_mail', function ($null, $atts) {
+  $mail = $atts['to']."\n".$atts['subject']."\n".$atts['message'];
+  file_put_contents(WP_CONTENT_DIR.'/last-mail.txt', $mail);
+  file_put_contents(WP_CONTENT_DIR.'/mail-log.txt', $mail."\n-----\n", FILE_APPEND);
+  return true;
+}, 10, 2);

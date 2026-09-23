@@ -25,6 +25,13 @@
       newsNone: 'No reports about security incidents found.', loading: 'Loading travel advice…',
       newsCount: '{n} news', parts: 'Parts: {level}', expandAll: 'Expand all', collapseAll: 'Collapse all',
       menu: 'Menu', tabCountries: 'Countries', tabAlerts: 'Notifications',
+      installMenu: 'Install as app', installTitle: 'Install {brand} as an app',
+      installLead: 'Put {brand} on your home screen: it opens full screen like an app, works offline and can send you notifications.',
+      iosSteps: ['Tap the Share button {share} in the toolbar (bottom on iPhone, top on iPad).', 'Scroll down and tap “Add to Home Screen” {add}.', 'Tap “Add”, then open {brand} from your home screen.'],
+      iosNote: 'No “Add to Home Screen”? Open this page in Safari.',
+      androidSteps: ['Open the browser menu {menu} at the top right.', 'Tap “Install app” or “Add to Home screen”.', 'Confirm, then open {brand} from your home screen.'],
+      androidOneTap: 'Tap “Install” below; {brand} will then appear on your home screen.',
+      installNow: 'Install', notNow: 'Not now', howTo: 'Show me how',
       codeLabel: 'Using the installed app? Enter the 6-digit code from the e-mail', codeButton: 'Sign in',
       alertsTitle: 'Notifications',
       alertsLead: 'Get a message when the travel advice for one of your countries changes. The official advice is checked every hour.',
@@ -82,6 +89,13 @@
       newsLoading: 'Suche nach Nachrichten…', newsNone: 'Keine Meldungen über Sicherheitsvorfälle gefunden.',
       newsCount: '{n} Meldungen', parts: 'Teilweise: {level}', expandAll: 'Alle aufklappen', collapseAll: 'Alle zuklappen',
       menu: 'Menü', tabCountries: 'Länder', tabAlerts: 'Benachrichtigungen',
+      installMenu: 'Als App installieren', installTitle: '{brand} als App installieren',
+      installLead: 'Legen Sie {brand} auf Ihren Home-Bildschirm: Die App öffnet im Vollbild, funktioniert offline und kann Ihnen Benachrichtigungen senden.',
+      iosSteps: ['Tippen Sie auf die Teilen-Taste {share} in der Symbolleiste (unten auf dem iPhone, oben auf dem iPad).', 'Scrollen Sie nach unten und tippen Sie auf „Zum Home-Bildschirm“ {add}.', 'Tippen Sie auf „Hinzufügen“ und öffnen Sie {brand} dann vom Home-Bildschirm.'],
+      iosNote: 'Kein „Zum Home-Bildschirm“? Öffnen Sie diese Seite in Safari.',
+      androidSteps: ['Öffnen Sie oben rechts das Browsermenü {menu}.', 'Tippen Sie auf „App installieren“ oder „Zum Startbildschirm hinzufügen“.', 'Bestätigen Sie und öffnen Sie {brand} dann vom Startbildschirm.'],
+      androidOneTap: 'Tippen Sie unten auf „Installieren“; {brand} erscheint dann auf Ihrem Startbildschirm.',
+      installNow: 'Installieren', notNow: 'Später', howTo: 'Anleitung zeigen',
       codeLabel: 'Sie nutzen die installierte App? Geben Sie den 6-stelligen Code aus der E-Mail ein', codeButton: 'Anmelden',
       alertsTitle: 'Benachrichtigungen',
       alertsLead: 'Erhalten Sie eine Nachricht, wenn sich der Reisehinweis für eines Ihrer Länder ändert. Die offiziellen Hinweise werden stündlich geprüft.',
@@ -140,6 +154,13 @@
       newsNone: 'Geen berichten over veiligheidsincidenten gevonden.', loading: 'Reisadvies ophalen…',
       newsCount: '{n} berichten', parts: 'Deels: {level}', expandAll: 'Alles uitklappen', collapseAll: 'Alles inklappen',
       menu: 'Menu', tabCountries: 'Landen', tabAlerts: 'Meldingen',
+      installMenu: 'Installeren als app', installTitle: '{brand} als app installeren',
+      installLead: 'Zet {brand} op je beginscherm: de app opent schermvullend, werkt offline en kan je meldingen sturen.',
+      iosSteps: ['Tik op de deelknop {share} in de werkbalk (onderaan op iPhone, bovenaan op iPad).', 'Scroll omlaag en tik op ‘Zet op beginscherm’ {add}.', 'Tik op ‘Voeg toe’ en open {brand} daarna vanaf je beginscherm.'],
+      iosNote: 'Zie je ‘Zet op beginscherm’ niet? Open deze pagina in Safari.',
+      androidSteps: ['Open rechtsboven het browsermenu {menu}.', 'Tik op ‘App installeren’ of ‘Toevoegen aan startscherm’.', 'Bevestig en open {brand} daarna vanaf je startscherm.'],
+      androidOneTap: 'Tik hieronder op ‘Installeren’; {brand} verschijnt dan op je startscherm.',
+      installNow: 'Installeren', notNow: 'Niet nu', howTo: 'Laat zien hoe',
       codeLabel: 'Gebruik je de geïnstalleerde app? Vul de 6-cijferige code uit de e-mail in', codeButton: 'Inloggen',
       alertsTitle: 'Meldingen',
       alertsLead: 'Krijg een bericht als het reisadvies voor een van je landen wijzigt. Het officiële advies wordt elk uur gecontroleerd.',
@@ -186,7 +207,7 @@
   const NEWS = { gdelt: 'GDELT', google: 'Google News' };
 
   // ---------------------------------------------------------------- state
-  const KEY = { lang: 'travel-risk.lang', countries: 'travel-risk.countries' };
+  const KEY = { lang: 'travel-risk.lang', countries: 'travel-risk.countries', guide: 'travel-risk.install-guide' };
   const store = {
     get(k, fallback) { try { const v = localStorage.getItem(k); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
@@ -206,6 +227,7 @@
     push: 'unknown',        // unknown | unsupported | denied | off | on | busy
     notice: '', code: '',
     email: '', consent: false, sentTo: '', authError: '', menuOpen: false, installPrompt: null, updatedAt: null,
+    guide: false,           // install instructions sheet open
   };
 
   const t = (key, vars = {}) => {
@@ -399,6 +421,7 @@
         h('span', { class: 'tr-sr' }, t('account'))),
       state.menuOpen && h('div', { class: 'tr-menu' },
         h('p', { class: 'tr-menu-email' }, state.me.email),
+        canGuide() && h('button', { type: 'button', onclick: openGuide }, t('installMenu')),
         h('button', { type: 'button', onclick: signOut }, t('signOut')),
         state.me.canDelete && h('button', { type: 'button', class: 'tr-danger', onclick: deleteAccount }, t('deleteAccount'))));
 
@@ -408,7 +431,7 @@
         h('span', { class: 'tr-name' }, cfg.brand)),
       h('div', { class: 'tr-actions' },
         hasTabs() && tabs('top'),
-        state.installPrompt && h('button', { type: 'button', class: 'tr-ghost tr-install', onclick: install }, t('install')),
+        state.installPrompt && !mobilePlatform() && h('button', { type: 'button', class: 'tr-ghost tr-install', onclick: install }, t('install')),
         langs, account));
   }
 
@@ -569,6 +592,7 @@
         h('div', { class: 'tr-setting' },
           h('div', {}, h('h2', {}, t('pushTitle')), h('p', { class: 'tr-muted' }, pushText)),
           ['on', 'off', 'busy'].includes(p) && switchControl(t('pushTitle'), p === 'on', on => (on ? enablePush() : disablePush()), p === 'busy')),
+        p === 'unsupported' && canGuide() && h('button', { type: 'button', class: 'tr-ghost tr-small', onclick: openGuide }, t('howTo')),
         p === 'off' && h('p', { class: 'tr-muted tr-small-print' }, t('pushConsent')),
         p === 'on' && h('button', { type: 'button', class: 'tr-ghost tr-small', onclick: testPush }, t('pushTest'))),
       h('section', { class: 'tr-panel' },
@@ -742,6 +766,7 @@
       topBar(),
       !navigator.onLine && h('p', { class: 'tr-offline', role: 'status' }, t('offline')),
       main,
+      state.guide && canGuide() && guideSheet(),
       hasTabs() && tabs('bottom'),
     ].filter(Boolean));
     const search = document.getElementById('tr-search');
@@ -752,11 +777,67 @@
     }
   }
 
+  // ---------------------------------------------------------------- install instructions
+  const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  // Phones and tablets only; laptops, MacBooks and Chromebooks (CrOS) get no instructions.
+  // iPadOS reports itself as a Mac, so touch support tells an iPad from a MacBook.
+  function mobilePlatform() {
+    const ua = navigator.userAgent;
+    if (/CrOS/.test(ua)) return null;
+    if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
+    if (/Android/.test(ua)) return 'android';
+    return null;
+  }
+  const canGuide = () => !isStandalone() && mobilePlatform() !== null;
+  const GUIDE_SNOOZE_DAYS = 14;
+
+  const GUIDE_ICONS = {
+    share: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>',
+    add: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>',
+    menu: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>',
+  };
+
+  // Text with {share}/{add}/{menu} icon placeholders and {brand}.
+  function richText(text) {
+    return text.replace(/\{brand\}/g, cfg.brand).split(/(\{share\}|\{add\}|\{menu\})/).map(part => {
+      const m = part.match(/^\{(share|add|menu)\}$/);
+      return m ? h('span', { class: 'tr-inline-ico', 'aria-hidden': 'true', innerHTML: GUIDE_ICONS[m[1]] }) : part;
+    });
+  }
+
+  function openGuide() { state.guide = true; state.menuOpen = false; render(); }
+  function closeGuide() {
+    state.guide = false;
+    store.set(KEY.guide, Date.now() + GUIDE_SNOOZE_DAYS * 864e5);
+    render();
+  }
+
+  function guideSheet() {
+    const platform = mobilePlatform();
+    const oneTap = platform === 'android' && state.installPrompt;
+    const steps = platform === 'ios' ? t('iosSteps') : t('androidSteps');
+    return h('aside', { class: 'tr-sheet', role: 'dialog', 'aria-labelledby': 'tr-sheet-title' },
+      h('div', { class: 'tr-sheet-head' },
+        h('img', { src: cfg.icon, alt: '', width: 48, height: 48, class: 'tr-sheet-icon' }),
+        h('h2', { id: 'tr-sheet-title' }, t('installTitle', { brand: cfg.brand })),
+        h('button', { type: 'button', class: 'tr-sheet-close', 'aria-label': t('notNow'), onclick: closeGuide }, '×')),
+      h('p', { class: 'tr-sheet-lead' }, t('installLead', { brand: cfg.brand })),
+      oneTap ? h('p', {}, richText(t('androidOneTap')))
+        : h('ol', { class: 'tr-steps' }, steps.map(step => h('li', {}, h('span', {}, richText(step))))),
+      platform === 'ios' && h('p', { class: 'tr-muted tr-small-print' }, t('iosNote')),
+      h('div', { class: 'tr-sheet-actions' },
+        h('button', { type: 'button', class: 'tr-ghost', onclick: closeGuide }, t('notNow')),
+        oneTap && h('button', { type: 'button', class: 'tr-primary', onclick: install }, t('installNow'))));
+  }
+
   // ---------------------------------------------------------------- PWA
   function install() {
     state.installPrompt.prompt();
-    state.installPrompt.userChoice.finally(() => { state.installPrompt = null; render(); });
+    state.installPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') state.guide = false;
+    }).finally(() => { state.installPrompt = null; render(); });
   }
+  window.addEventListener('appinstalled', () => { state.guide = false; store.set(KEY.guide, Date.now() + 3650 * 864e5); render(); });
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); state.installPrompt = e; render(); });
   window.addEventListener('online', render);
   window.addEventListener('offline', render);
@@ -771,12 +852,15 @@
 
   // ---------------------------------------------------------------- start
   async function start() {
-    const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-    if (standalone && cfg.appUrl && !new URLSearchParams(location.search).has('tr_app')) {
+    if (isStandalone() && cfg.appUrl && !new URLSearchParams(location.search).has('tr_app')) {
       location.replace(cfg.appUrl + location.hash);
       return;
     }
     render();
+    // First visit on a phone or tablet: offer install instructions (not again for a while after "Not now").
+    if (canGuide() && Date.now() > (store.get(KEY.guide, 0) || 0)) {
+      setTimeout(() => { state.guide = true; render(); }, 1500);
+    }
     const token = (location.hash.match(/tr-login=([a-f0-9]{64})/) || [])[1];
     if (token) {
       history.replaceState(null, '', location.pathname + location.search);

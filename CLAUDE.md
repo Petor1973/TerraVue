@@ -33,6 +33,10 @@ Code en commentaar: Engels.
 
 - **Kopbalk** (merk, taalwissel, gebruikersmenu) staat altijd vast bovenaan (`position: sticky`).
 - **Landen** als compacte tegels (kleur, naam, niveau, badges); klikken klapt de volledige info uit.
+- **Installatie-instructies** alleen op telefoons/tablets (iOS incl. iPad-als-Mac via touch, Android),
+  niet op laptops/MacBooks/Chromebooks en niet in de geïnstalleerde app. Kaart onderin boven de tabbalk;
+  Android met `beforeinstallprompt` → één knop "Installeren". "Niet nu" = 14 dagen stil (localStorage);
+  altijd terug te halen via het accountmenu en (iOS) vanuit Meldingen.
 - **Geïnstalleerde app** opent `app-pagina?tr_app=1` met `templates/app.php`: geen thema-header/-footer.
   Rekening houden met `env(safe-area-inset-*)` (notch, home-indicator).
 - **Navigatie:** **zwevende tabbalk ("eiland")** zoals in de App Store (nu: Landen, Meldingen): los van de onderrand, afgerond,

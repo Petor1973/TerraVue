@@ -1,7 +1,7 @@
 === Terravue – Travel Risk Monitor ===
 Requires at least: 6.4
 Requires PHP: 8.0
-Stable tag: 0.3.1
+Stable tag: 0.4.0
 License: Proprietary
 
 Official travel advice and recent security news per country, as an installable web app (PWA).
@@ -19,6 +19,10 @@ Dutch – Ministerie van Buitenlandse Zaken. The interface is English by default
 
 Users register once with their e-mail address (sign-in link or 6-digit code, no password, double opt-in).
 Their countries and language are saved to their account and on the device, so the app also works offline.
+
+On phones and tablets (not on laptops) visitors see short instructions to install the app on their
+home screen: iPhone/iPad via Share → Add to Home Screen, Android with a one-tap Install button where the
+browser supports it.
 
 Notifications: users can turn on push notifications (per device) and/or e-mail. The advice for followed
 countries is checked hourly; when the level changes, they get a message in their own language.

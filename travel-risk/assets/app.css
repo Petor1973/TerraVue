@@ -203,18 +203,23 @@
 .trisk .tr-tabs-top button[aria-current="page"] { background: color-mix(in srgb, var(--tr-accent) 12%, transparent); }
 .trisk .tr-ico { display: inline-flex; }
 .trisk .tr-tabs-top .tr-ico svg { width: 20px; height: 20px; }
+/* Floating "island": a detached, rounded, translucent bar above the bottom edge. */
 .trisk .tr-tabs-bottom {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-  justify-content: space-around; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--tr-surface) 72%, transparent);
-  -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px);
-  border-top: 1px solid color-mix(in srgb, var(--tr-line) 80%, transparent);
+  position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 40;
+  transform: translateX(-50%); width: min(calc(100% - 32px), 340px);
+  justify-content: space-between; gap: 4px; padding: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tr-surface) 70%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid color-mix(in srgb, #fff 60%, transparent);
+  box-shadow: 0 8px 28px rgba(16, 33, 43, .18), 0 1px 3px rgba(16, 33, 43, .08);
 }
 .trisk .tr-tabs-bottom button {
-  flex: 1; max-width: 160px; flex-direction: column; gap: 2px; min-height: 52px; padding: 4px;
-  border-radius: 12px; font-size: .72rem; font-weight: 600;
+  flex: 1; flex-direction: column; justify-content: center; gap: 2px; min-height: 54px; padding: 4px 10px;
+  border-radius: 999px; font-size: .72rem; font-weight: 600; transition: background .15s, color .15s;
 }
-.trisk.has-tabs { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.trisk .tr-tabs-bottom button[aria-current="page"] { background: color-mix(in srgb, var(--tr-accent) 14%, transparent); }
+.trisk.has-tabs { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
 @media (min-width: 900px) {
   .trisk .tr-tabs-bottom { display: none; }
   .trisk.has-tabs { padding-bottom: 48px; }
@@ -224,7 +229,7 @@
 }
 body.trisk-standalone .trisk .tr-tabs-top { display: none; }
 body.trisk-standalone .trisk .tr-tabs-bottom { display: flex; }
-body.trisk-standalone .trisk.has-tabs { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+body.trisk-standalone .trisk.has-tabs { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
 
 /* notifications screen */
 .trisk .tr-panel { background: var(--tr-surface); border-radius: var(--tr-radius); box-shadow: var(--tr-shadow); padding: 16px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
@@ -256,4 +261,4 @@ body.trisk-standalone { margin: 0; background: #f4f6f8; }
 body.trisk-standalone .trisk { border-radius: 0; min-height: 100vh; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 body.trisk-standalone .trisk .tr-top { padding-top: calc(12px + env(safe-area-inset-top)); }
 
-@media (prefers-reduced-motion: reduce) { .trisk .tr-chev, .trisk .tr-switch, .trisk .tr-switch span { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .trisk .tr-chev, .trisk .tr-switch, .trisk .tr-switch span, .trisk .tr-tabs-bottom button { transition: none; } }

@@ -35,7 +35,7 @@ Code en commentaar: Engels.
 - **Landen** als compacte tegels (kleur, naam, niveau, badges); klikken klapt de volledige info uit.
 - **Geïnstalleerde app** opent `app-pagina?tr_app=1` met `templates/app.php`: geen thema-header/-footer.
   Rekening houden met `env(safe-area-inset-*)` (notch, home-indicator).
-- **Navigatie:** **tabbalk onderin** zoals in de App Store (nu: Landen, Meldingen): vast aan de onderkant,
+- **Navigatie:** **zwevende tabbalk ("eiland")** zoals in de App Store (nu: Landen, Meldingen): los van de onderrand, afgerond,
   deels transparant (`backdrop-filter: blur`), icoon + kort label per tab, actieve tab in accentkleur,
   ruimte voor `safe-area-inset-bottom`. Op brede schermen (≥ 900px, niet in de app) staat dezelfde
   navigatie in de kopbalk. Het gebruikersmenu rechtsboven blijft. Nieuwe schermen = nieuwe tab.

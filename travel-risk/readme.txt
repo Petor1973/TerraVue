@@ -1,7 +1,7 @@
 === Terravue – Travel Risk Monitor ===
 Requires at least: 6.4
 Requires PHP: 8.0
-Stable tag: 0.5.0
+Stable tag: 0.6.0
 License: Proprietary
 
 Official travel advice and recent security news per country, as an installable web app (PWA).
@@ -15,9 +15,10 @@ Users pick the countries they care about and see, per country:
 * recent security-related news (last 48 hours by default).
 
 Users choose whose government advice they follow (usually their nationality or employer): the
-Netherlands (Ministerie van Buitenlandse Zaken), the UK (FCDO) or Germany (Auswärtiges Amt). This is
+Netherlands, the United Kingdom, Germany, the United States, Canada or Australia. This is
 independent of the interface language; the default comes from the browser's region setting, never from
-the device location. An opened country shows the other governments' levels for comparison.
+the device location. An opened country shows the other five governments' levels and a consensus (most common level and
+the strictest, with the governments that give it).
 The interface is English by default, with German and Dutch.
 
 Users register once with their e-mail address (sign-in link or 6-digit code, no password, double opt-in).
@@ -50,7 +51,12 @@ receive country names/codes only. The front end loads no third-party fonts, scri
 
 == Data sources ==
 
-* GOV.UK Content API – contains public sector information licensed under the Open Government Licence v3.0.
-* Auswärtiges Amt – Open Data travel warnings.
-* Ministerie van Buitenlandse Zaken – open data travel advice.
+Attribution for each source is shown in the app footer. The app is not affiliated with or endorsed by any government.
+
+* UK – GOV.UK Content API: contains public sector information licensed under the Open Government Licence v3.0.
+* United States – Department of State travel advisories (RSS): public domain; attribution given.
+* Canada – Travel Advice and Advisories (open data): Open Government Licence – Canada.
+* Australia – Smartraveller (RSS): check the Smartraveller copyright terms before commercial use.
+* Germany – Auswärtiges Amt open data: check the terms before commercial use.
+* Netherlands – Ministerie van Buitenlandse Zaken open data: check the terms before commercial use.
 * GDELT Project – news. Google News RSS is optional and for personal, non-commercial use only.

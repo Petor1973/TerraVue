@@ -130,6 +130,7 @@
 .trisk .tr-sources-name { font-size: .88rem; }
 .trisk .tr-sources-hint { margin: 0 0 12px; font-size: .82rem; }
 
+.trisk .tr-consensus { font-size: .9rem; font-weight: 600; padding: 8px 12px; border-radius: 10px; background: var(--tr-bg); }
 /* comparison with the other governments inside an opened tile */
 .trisk .tr-compare { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .88rem; }
 .trisk .tr-cmp {
@@ -192,6 +193,9 @@
 .trisk .tr-empty { grid-column: 1 / -1; background: var(--tr-surface); border: 2px dashed var(--tr-line); border-radius: var(--tr-radius); padding: 32px; color: var(--tr-muted); text-align: center; }
 .trisk .tr-stamp { margin-top: 16px; }
 .trisk .tr-foot { margin-top: 24px; color: var(--tr-muted); font-size: .82rem; max-width: 80ch; }
+.trisk .tr-foot p + p, .trisk .tr-foot details { margin-top: 6px; }
+.trisk .tr-foot ul { margin: 6px 0 0; padding-left: 18px; }
+.trisk .tr-foot summary { color: var(--tr-muted); font-weight: 600; font-size: .82rem; }
 
 /* registration */
 .trisk .tr-auth {

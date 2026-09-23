@@ -2,7 +2,7 @@
 /**
  * REST API, namespace travel-risk/v1.
  *
- *   GET    /advice/{ISO3}?source=   Travel advice from buza | fcdo | aa (or ?lang= for its default source)
+ *   GET    /advice/{ISO3}?source=   Travel advice from buza | fcdo | aa | usdos | gac | dfat (or ?lang= for its default source)
  *   GET    /news/{ISO3}             Recent security news
  *   GET    /me                      Signed-in state, saved countries and language
  *   PUT    /me                      Save countries, language, advice source, e-mail notifications
@@ -146,7 +146,7 @@ class Rest {
 		try {
 			$data = cached(
 				"advice:$source:{$country['iso3']}",
-				fn() => ( new Sources( __NAMESPACE__ . '\\http_get' ) )->advice( $source, $country )
+				fn() => sources()->advice( $source, $country )
 			);
 		} catch ( SourceException $e ) {
 			return self::fail( $e );

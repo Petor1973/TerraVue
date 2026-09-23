@@ -66,6 +66,8 @@ class Frontend {
 					'worker'     => Pwa::worker_url(),
 					'appUrl'     => Pwa::start_url(),
 					'icon'       => plugins_url( 'assets/icons/icon-192.png', FILE ),
+					'sources'    => Sources::NAMES,
+					'credits'    => Sources::ATTRIBUTION,
 					'privacyUrl' => get_privacy_policy_url(),
 					'news'       => 'none' === setting( 'news_provider' ) ? false : setting( 'news_provider' ),
 				)

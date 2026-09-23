@@ -22,8 +22,8 @@ Code en commentaar: Engels.
   (beheerders, redacteuren) kunnen nooit via link of code inloggen.
 - **Push** alleen naar bekende pushdiensten (`Notify::PUSH_HOSTS`: Google, Mozilla, Apple, Microsoft), nooit
   naar willekeurige URL's (SSRF). Payload altijd versleuteld (RFC 8291), VAPID-sleutels per site in een option.
-- **Bronnen/licenties.** Reisadvies: BuZa open data (NL), FCDO via GOV.UK Content API (OGL v3, bronvermelding),
-  Auswärtiges Amt open data (DE). Nieuws: GDELT (standaard). Google News RSS is alleen voor persoonlijk,
+- **Bronnen/licenties.** Reisadvies van zes overheden (zie tabel "Bronnen en licenties"); bronvermelding per
+  bron in de app-footer (`Sources::ATTRIBUTION`), plus "niet verbonden aan een overheid". Nieuws: GDELT (standaard). Google News RSS is alleen voor persoonlijk,
   niet-commercieel gebruik — voor een betaalde dienst een gelicentieerde nieuwsbron kiezen.
 - **Merk.** "Terravue" is een werknaam; nog geen merkonderzoek gedaan. "UNECTA" is een bestaand merk van
   een Braziliaans bedrijf: niet gebruiken als naam, en de stijl niet zo dicht benaderen dat verwarring ontstaat.
@@ -73,20 +73,45 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 
 1 groen = normale voorzorg, 2 geel = let op, 3 oranje = alleen noodzakelijke reizen, 4 rood = niet reizen.
 `level` = grootste deel van het land, `maxLevel` = strengste niveau ergens in het land.
-- FCDO: `details.alert_status` (whole_country / parts). Alleen regionale alerts -> level 2.
+- FCDO: `details.alert_status` (whole_country / parts). Alleen regionale alerts -> level 2; beide regionale
+  treden (all + all-but-essential, bv. Oekraïne) -> level 3 voor de rest van het land.
 - AA: `warning` 4, `situationWarning` 3, `partialWarning` max 4, `situationPartWarning` max 3.
 - BuZa: geen kleurveld; per zin geparsed (`Sources::buza_levels`). **Bij twijfel: testgeval toevoegen.**
-- **Bron = keuze van de gebruiker** ("Advies van NL · UK · DE"), los van de UI-taal: het advies van de overheid
+- **Bron = keuze van de gebruiker** ("Advies van NL · UK · DE · US · CA · AU"), los van de UI-taal: het advies van de overheid
   van je nationaliteit/werkgever (daar hangt ook je reisverzekering aan). **Nooit op locatie** (AVG, geen
   tracking; en inhoudelijk fout: advies hangt af van wie je bent, niet waar je bent). Standaard uit de
-  regio-instelling van de browser (`nl-NL` → NL, `de-*` → DE, anders UK), client-side; opgeslagen in
+  regio-instelling van de browser (`nl-NL` → NL, `de-*` → DE, `-US` → US, `-CA` → CA, `-AU` → AU, anders UK), client-side; opgeslagen in
   localStorage en user meta `travel_risk_source`; meldingen volgen dezelfde bron (`user_source()`).
-  Uitgeklapte tegel toont de niveaus van de andere twee overheden ter vergelijking.
+  Uitgeklapte tegel toont de niveaus van de andere vijf overheden en de consensus ter vergelijking.
 - Een bron geeft geen advies voor het eigen land. Samenvatting staat in de taal van de bron.
+
+## Bronnen en licenties
+
+| id | Overheid | Endpoint | Formaat / niveau | Licentie |
+|---|---|---|---|---|
+| buza | Nederland, BuZa | opendata.nederlandwereldwijd.nl v2, per land | XML; kleur uit tekst | open data — **licentie nog verifiëren** |
+| fcdo | VK, FCDO | GOV.UK Content API, per land | `details.alert_status` | OGL v3, bronvermelding (geverifieerd) |
+| aa | Duitsland, Auswärtiges Amt | opendata/travelwarning (+ detail) | booleans | open data — **licentie nog verifiëren** |
+| usdos | VS, State Department | `travel.state.gov/_res/rss/TAsTWs.xml` (één feed) | "Level N" in titel; regionaal uit tekst | publiek domein, bronvermelding gewaardeerd |
+| gac | Canada, Global Affairs | `data.international.gc.ca/travel-voyage/index-alpha-eng.json` | `advisory-state` 0–3 (+1); `has-regional-advisory` zonder niveau → `regional: true` | Open Government Licence – Canada |
+| dfat | Australië, Smartraveller | `smartraveller.gov.au/countries/documents/index.rss` | `<ta:description>` (tekst → niveau); regionaal uit tekst | **licentie nog verifiëren** (vermoedelijk CC BY) |
+
+- De JSON-API van de VS (`cadataapi.state.gov/api/TravelAdvisories`) is sinds sept. 2026 leeg; de RSS-feed werkt.
+  travel.state.gov zit achter Cloudflare: nooit omzeilen (geen nep-user-agent). Bij 403: bron tijdelijk niet beschikbaar.
+- Hele feeds (VS, CA, AU, AA-lijst) worden één keer opgehaald en gedeeld gecachet (`sources()` → `cached('feed:…')`).
+- Landnamen in feeds wijken af ("Burma (Myanmar)", "Mainland China, Hong Kong & Macau", "Türkiye"):
+  `Sources::name_matches()` + `alt`-aliassen in countries.json. Bij een nieuw land zonder treffer: alias toevoegen + test.
+- **Consensus:** uitgeklapte tegel toont het meest genoemde landelijke niveau over alle overheden (gelijkspel → strenger)
+  en het strengste niveau met de overheden die dat zeggen. Alleen bij ≥ 3 bronnen met een niveau.
+- **Japan (MOFA) en Zuid-Korea (MOFA) bewust nog niet** (alleen zinvol voor de Aziatische markt):
+  Japan: de open data (ezairyu.mofa.go.jp) bevat consulaire mails, géén actuele 危険レベル; niveaus staan alleen
+  in HTML op anzen.mofa.go.jp (geen stabiliteitsgarantie). Licentie wel ruim (Japan Public Data License 1.0, commercieel toegestaan).
+  Korea: data.go.kr `TravelAlarmService2` vereist een API-sleutel (aanvragen), antwoord in het Koreaans; responsvelden nog verifiëren.
+  Frankrijk: geen actuele open API.
 
 ## API (travel-risk/v1)
 
-`GET advice/{ISO3}?source=` (buza|fcdo|aa; `?lang=` = standaardbron), `GET news/{ISO3}`, `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`), `POST login`,
+`GET advice/{ISO3}?source=` (buza|fcdo|aa|usdos|gac|dfat; `?lang=` = standaardbron), `GET news/{ISO3}`, `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`), `POST login`,
 `POST login/verify` (`token` of `email`+`code`), `POST logout`, `GET push/key`, `POST|DELETE push`, `POST push/test`. Foutcodes als korte string (`rate_limited`, `not_found`, ...), vertaald in app.js.
 Cache: transients, alleen succesvolle antwoorden, standaard 60 min. GDELT-aanroepen minimaal 6 s uit elkaar.
 
@@ -112,7 +137,8 @@ iOS: push alleen in de app op het beginscherm (iOS 16.4+). Echte cron aanbevolen
    uren, samenvatting per dag. Push getest met onafhankelijke decryptie (http_ece), nog niet tegen een
    echte pushdienst: eerste keer live testen met de knop "Testmelding sturen".
 2. Echte bronnen valideren tegen live data (in deze ontwikkelomgeving was internet dicht): GOV.UK-slugs,
-   AA-veldnamen, BuZa-teksten van alle landen door `buza_levels` halen en afwijkingen als test vastleggen.
+   AA-veldnamen, BuZa-teksten van alle landen door `buza_levels` halen en afwijkingen als test vastleggen;
+   US/AU-landnamen tegen `name_matches()` (ontbrekende treffers → alias); licenties buza/aa/dfat bevestigen.
 3. Gelicentieerde nieuwsbron kiezen als de dienst commercieel wordt; nieuws per taal (DE/NL-media).
 4. Regio's per land (bv. werklocatie in een regionaal waarschuwingsgebied).
 5. Definitieve naam + merkonderzoek (BOIP/EUIPO), logo en kleuren; daarna `brand_name` en kleuren instellen.

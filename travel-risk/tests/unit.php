@@ -130,6 +130,83 @@ foreach ( $cases as $name => list( $flags, $expected ) ) {
 check( 'aa: summary', Sources::parse_aa( $aa( array() ), '222' )['summary'], 'Aktuelles Vor Reisen in das Grenzgebiet wird gewarnt.' );
 check( 'aa: millisecond timestamp', Sources::parse_aa( $aa( array() ), '222' )['updated'], gmdate( 'c', 1757500000 ) );
 
+// ---------------------------------------------------------------- FCDO: two regional tiers (Ukraine)
+$r = Sources::parse_fcdo( $fcdo( array( 'avoid_all_travel_to_parts', 'avoid_all_but_essential_travel_to_parts' ) ), 'ukraine' );
+check( 'fcdo: two regional tiers -> rest of country essential only', array( $r['level'], $r['maxLevel'] ), array( 3, 4 ) );
+
+// ---------------------------------------------------------------- United States (RSS)
+$sau = array( 'iso3' => 'SAU', 'iso2' => 'SA', 'en' => 'Saudi Arabia' );
+$chn = array( 'iso3' => 'CHN', 'iso2' => 'CN', 'en' => 'China' );
+$mmr = array( 'iso3' => 'MMR', 'iso2' => 'MM', 'en' => 'Myanmar', 'alt' => array( 'Burma' ) );
+$bhs = array( 'iso3' => 'BHS', 'iso2' => 'BS', 'en' => 'Bahamas' );
+$nor = array( 'iso3' => 'NOR', 'iso2' => 'NO', 'en' => 'Norway' );
+$us_rss = '<?xml version="1.0" encoding="utf-8"?><rss><channel>'
+	. '<item><title>Saudi Arabia - Level 3: Reconsider Travel</title><link>https://travel.state.gov/sa.html</link><pubDate>Mon, 21 Sep 2026 10:00:00 GMT</pubDate>'
+	. '<description>&lt;p&gt;Reconsider travel due to missile and drone attacks. &lt;b&gt;Level 4: Do Not Travel&lt;/b&gt; to within 10 miles of the Yemen border.&lt;/p&gt;</description></item>'
+	. '<item><title>Mainland China, Hong Kong &amp; Macau - See Summaries - Level 2: Exercise Increased Caution</title><link>https://travel.state.gov/cn.html</link><description>Exercise increased caution.</description></item>'
+	. '<item><title>Burma (Myanmar) Travel Advisory - Level 4: Do Not Travel</title><link>https://travel.state.gov/mm.html</link><description>Do not travel.</description></item>'
+	. '<item><title>The Bahamas - Level 2: Exercise Increased Caution</title><link>https://travel.state.gov/bs.html</link><description>Caution.</description></item>'
+	. '<item><title>Worldwide Caution</title><link>https://travel.state.gov/ww.html</link><description>No level.</description></item>'
+	. '</channel></rss>';
+$r = Sources::parse_usdos( $us_rss, $sau );
+check( 'us: level from title, regional Level 4 from text', array( $r['level'], $r['maxLevel'] ), array( 3, 4 ) );
+check( 'us: summary and url', array( str_starts_with( $r['summary'], 'Reconsider travel due to' ), $r['url'] ), array( true, 'https://travel.state.gov/sa.html' ) );
+check( 'us: combined title "Mainland China, Hong Kong & Macau - See Summaries"', Sources::parse_usdos( $us_rss, $chn )['level'], 2 );
+check( 'us: "Burma (Myanmar) Travel Advisory" via alias', Sources::parse_usdos( $us_rss, $mmr )['level'], 4 );
+check( 'us: "The Bahamas"', Sources::parse_usdos( $us_rss, $bhs )['level'], 2 );
+$threw = null;
+try {
+	Sources::parse_usdos( $us_rss, $nor );
+} catch ( SourceException $e ) {
+	$threw = $e->getMessage();
+}
+check( 'us: country not in feed -> not_found', $threw, 'not_found' );
+
+// ---------------------------------------------------------------- Canada (JSON index)
+$ca_json = json_encode( array(
+	'metadata' => array( 'generated' => array( 'date' => '2026-09-23' ) ),
+	'data'     => array(
+		'SA' => array( 'country-iso' => 'SA', 'advisory-state' => 1, 'has-regional-advisory' => 1, 'date-published' => array( 'date' => '2026-09-20 10:00:00' ), 'eng' => array( 'name' => 'Saudi Arabia', 'url-slug' => 'saudi-arabia', 'advisory-text' => 'Exercise a high degree of caution', 'recent-updates' => '<p>Updated security section.</p>' ) ),
+		'NO' => array( 'country-iso' => 'NO', 'advisory-state' => 0, 'has-regional-advisory' => 0, 'eng' => array( 'url-slug' => 'norway', 'advisory-text' => 'Take normal security precautions' ) ),
+		'MM' => array( 'country-iso' => 'MM', 'advisory-state' => 3, 'has-regional-advisory' => 0, 'eng' => array( 'url-slug' => 'myanmar', 'advisory-text' => 'Avoid all travel' ) ),
+	),
+) );
+$r = Sources::parse_gac( $ca_json, $sau );
+check( 'ca: advisory-state 1 -> level 2, regional flag', array( $r['level'], $r['maxLevel'], $r['regional'] ), array( 2, 2, true ) );
+check( 'ca: url and summary', array( $r['url'], $r['summary'] ), array( 'https://travel.gc.ca/destinations/saudi-arabia', 'Exercise a high degree of caution. Updated security section.' ) );
+check( 'ca: levels 1 and 4', array( Sources::parse_gac( $ca_json, $nor )['level'], Sources::parse_gac( $ca_json, $mmr )['level'] ), array( 1, 4 ) );
+
+// ---------------------------------------------------------------- Australia (Smartraveller RSS)
+$au_rss = '<rss xmlns:ta="https://www.smartraveller.gov.au"><channel>'
+	. '<item><title>Saudi Arabia</title><link>https://www.smartraveller.gov.au/destinations/middle-east/saudi-arabia</link><pubDate>Tue, 22 Sep 2026 09:00:00 GMT</pubDate>'
+	. '<description>&lt;p&gt;Exercise a high degree of caution in Saudi Arabia. Do not travel to within 10km of the border with Yemen.&lt;/p&gt;</description>'
+	. '<ta:warnings><ta:level>3/5</ta:level><ta:description>Exercise a high degree of caution</ta:description></ta:warnings></item>'
+	. '<item><title>South Korea (Republic of Korea)</title><link>https://www.smartraveller.gov.au/destinations/asia/south-korea-republic-korea</link><description>Normal.</description>'
+	. '<ta:warnings><ta:level>2/5</ta:level><ta:description>Exercise normal safety precautions</ta:description></ta:warnings></item>'
+	. '<item><title>Türkiye</title><link>https://www.smartraveller.gov.au/destinations/europe/turkiye</link><description>Reconsider your need to travel to the border with Syria.</description>'
+	. '<ta:warnings><ta:level>3/5</ta:level><ta:description>Exercise a high degree of caution</ta:description></ta:warnings></item>'
+	. '</channel></rss>';
+$r = Sources::parse_dfat( $au_rss, $sau );
+check( 'au: level from ta:description, regional "Do not travel to" -> max 4', array( $r['level'], $r['maxLevel'] ), array( 2, 4 ) );
+check( 'au: "South Korea (Republic of Korea)"', Sources::parse_dfat( $au_rss, array( 'iso3' => 'KOR', 'en' => 'South Korea' ) )['level'], 1 );
+check( 'au: "Türkiye" via alias, "Reconsider ... to" -> max 3', array_values( array_intersect_key( Sources::parse_dfat( $au_rss, array( 'iso3' => 'TUR', 'en' => 'Turkey', 'alt' => array( 'Turkiye' ) ) ), array( 'level' => 1, 'maxLevel' => 1 ) ) ), array( 2, 3 ) );
+
+check( 'phrases to levels', array_map( array( Sources::class, 'level_from_phrase' ), array( 'Exercise normal safety precautions', 'Exercise a high degree of caution', 'Reconsider your need to travel', 'Avoid non-essential travel', 'Do not travel', 'Avoid all travel', 'something else' ) ), array( 1, 2, 3, 3, 4, 4, null ) );
+
+$threw = null;
+try {
+	( new Sources( fn() => array( 'status' => 200, 'body' => '' ) ) )->advice( 'usdos', array( 'iso3' => 'USA', 'en' => 'United States' ) );
+} catch ( SourceException $e ) {
+	$threw = $e->getMessage();
+}
+check( 'us: no advice for the US itself', $threw, 'no_home_advice' );
+
+$fetches = 0;
+$shared  = new Sources( function () use ( &$fetches, $us_rss ) { $fetches++; return array( 'status' => 200, 'body' => $us_rss ); } );
+$shared->advice( 'usdos', $sau );
+$shared->advice( 'usdos', $mmr );
+check( 'feed fetched once for several countries', $fetches, 1 );
+
 // ---------------------------------------------------------------- adapters with fake HTTP
 $calls = array();
 $http  = function ( string $url ) use ( &$calls, $xml ) {

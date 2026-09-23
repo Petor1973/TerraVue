@@ -28,7 +28,9 @@
       adviceFrom: 'Advice from',
       adviceHint: 'Choose the government whose advice you follow, usually that of your nationality or your employer. It applies to all countries and to notifications.',
       otherSources: 'Other governments', inLanguage: 'Summary in {lang}.', followSource: 'Follow the advice of {source} (for all countries)',
-      sourceLang: { buza: 'Dutch', fcdo: 'English', aa: 'German' },
+      sourceLang: { buza: 'Dutch', fcdo: 'English', aa: 'German', usdos: 'English', gac: 'English', dfat: 'English' },
+      consensus: '{n} governments: most say “{most}”; strictest “{max}” ({who}).', regionalUnknown: 'Stricter advice applies to parts of the country. Check the regional details in the full advice.', regionalBadge: 'Regional warnings',
+      allSources: 'Sources and licences', notEndorsed: 'Not affiliated with or endorsed by any government.',
       installMenu: 'Install as app', installTitle: 'Install {brand} as an app',
       installLead: 'Put {brand} on your home screen: it opens full screen like an app, works offline and can send you notifications.',
       iosSteps: ['Tap the Share button {share} in the toolbar (bottom on iPhone, top on iPad).', 'Scroll down and tap “Add to Home Screen” {add}.', 'Tap “Add”, then open {brand} from your home screen.'],
@@ -96,7 +98,9 @@
       adviceFrom: 'Hinweise von',
       adviceHint: 'Wählen Sie die Regierung, deren Hinweisen Sie folgen, meist die Ihrer Staatsangehörigkeit oder Ihres Arbeitgebers. Gilt für alle Länder und Benachrichtigungen.',
       otherSources: 'Andere Regierungen', inLanguage: 'Zusammenfassung auf {lang}.', followSource: 'Hinweisen von {source} folgen (für alle Länder)',
-      sourceLang: { buza: 'Niederländisch', fcdo: 'Englisch', aa: 'Deutsch' },
+      sourceLang: { buza: 'Niederländisch', fcdo: 'Englisch', aa: 'Deutsch', usdos: 'Englisch', gac: 'Englisch', dfat: 'Englisch' },
+      consensus: '{n} Regierungen: die meisten sagen „{most}“; am strengsten „{max}“ ({who}).', regionalUnknown: 'Für Teile des Landes gelten strengere Hinweise. Prüfen Sie die regionalen Angaben im vollständigen Hinweis.', regionalBadge: 'Regionale Warnungen',
+      allSources: 'Quellen und Lizenzen', notEndorsed: 'Nicht mit einer Regierung verbunden oder von ihr unterstützt.',
       installMenu: 'Als App installieren', installTitle: '{brand} als App installieren',
       installLead: 'Legen Sie {brand} auf Ihren Home-Bildschirm: Die App öffnet im Vollbild, funktioniert offline und kann Ihnen Benachrichtigungen senden.',
       iosSteps: ['Tippen Sie auf die Teilen-Taste {share} in der Symbolleiste (unten auf dem iPhone, oben auf dem iPad).', 'Scrollen Sie nach unten und tippen Sie auf „Zum Home-Bildschirm“ {add}.', 'Tippen Sie auf „Hinzufügen“ und öffnen Sie {brand} dann vom Home-Bildschirm.'],
@@ -165,7 +169,9 @@
       adviceFrom: 'Advies van',
       adviceHint: 'Kies de overheid waarvan je het advies volgt, meestal die van je nationaliteit of werkgever. Geldt voor alle landen en voor meldingen.',
       otherSources: 'Andere overheden', inLanguage: 'Samenvatting in het {lang}.', followSource: 'Advies van {source} volgen (voor alle landen)',
-      sourceLang: { buza: 'Nederlands', fcdo: 'Engels', aa: 'Duits' },
+      sourceLang: { buza: 'Nederlands', fcdo: 'Engels', aa: 'Duits', usdos: 'Engels', gac: 'Engels', dfat: 'Engels' },
+      consensus: '{n} overheden: de meeste zeggen ‘{most}’; strengst ‘{max}’ ({who}).', regionalUnknown: 'Voor delen van het land geldt een strenger advies. Bekijk de regionale details in het volledige advies.', regionalBadge: 'Regionale waarschuwingen',
+      allSources: 'Bronnen en licenties', notEndorsed: 'Niet verbonden aan of goedgekeurd door een overheid.',
       installMenu: 'Installeren als app', installTitle: '{brand} als app installeren',
       installLead: 'Zet {brand} op je beginscherm: de app opent schermvullend, werkt offline en kan je meldingen sturen.',
       iosSteps: ['Tik op de deelknop {share} in de werkbalk (onderaan op iPhone, bovenaan op iPad).', 'Scroll omlaag en tik op ‘Zet op beginscherm’ {add}.', 'Tik op ‘Voeg toe’ en open {brand} daarna vanaf je beginscherm.'],
@@ -215,9 +221,9 @@
     },
   };
   const LOCALE = { en: 'en-GB', de: 'de-DE', nl: 'nl-NL' };
-  const SOURCES = ['buza', 'fcdo', 'aa'];
-  const SOURCE = { buza: 'Ministerie van Buitenlandse Zaken (NL)', fcdo: 'FCDO (UK)', aa: 'Auswärtiges Amt (DE)' };
-  const SOURCE_SHORT = { buza: 'NL', fcdo: 'UK', aa: 'DE' };
+  const SOURCE = cfg.sources;             // id -> full name, from Sources::NAMES
+  const SOURCES = Object.keys(SOURCE);
+  const SOURCE_SHORT = { buza: 'NL', fcdo: 'UK', aa: 'DE', usdos: 'US', gac: 'CA', dfat: 'AU' };
 
   // Default advice source from the browser's language/region settings; no location is used.
   function defaultSource() {
@@ -227,6 +233,9 @@
       if (['DE', 'AT', 'CH', 'LI', 'LU'].includes(region) && lang === 'DE') return 'aa';
       if (lang === 'DE' && !region) return 'aa';
       if (region === 'GB' || region === 'UK') return 'fcdo';
+      if (region === 'US') return 'usdos';
+      if (region === 'CA') return 'gac';
+      if (region === 'AU') return 'dfat';
     }
     return 'fcdo';
   }
@@ -749,6 +758,7 @@
 
     const badges = h('span', { class: 'tr-badges' },
       a.maxLevel > a.level && h('span', { class: 'tr-badge lv' + a.maxLevel }, t('parts', { level: t('level')[a.maxLevel] })),
+      !(a.maxLevel > a.level) && a.regional && h('span', { class: 'tr-badge lv3' }, t('regionalBadge')),
       newsItems > 0 && h('span', { class: 'tr-badge' }, t('newsCount', { n: newsItems })),
       a.error && h('span', { class: 'tr-badge' }, '!'));
 
@@ -772,16 +782,21 @@
       if (!a.level) body.append(h('p', { class: 'tr-note' }, t('noLevel')));
       if (a.maxLevel > a.level) {
         body.append(h('p', { class: 'tr-note lv' + a.maxLevel }, t('partial', { level: t('level')[a.maxLevel] })));
+      } else if (a.regional) {
+        body.append(h('p', { class: 'tr-note' }, t('regionalUnknown')));
       }
       body.append(h('p', { class: 'tr-meta' },
         [a.updated && t('updated', { date: fmtDate(a.updated) }), t('source', { source: a.sourceName })].filter(Boolean).join(' · ')));
       const cmp = state.others[iso] || {};
+      const verdict = consensus(a, cmp);
+      if (verdict) body.append(h('p', { class: 'tr-consensus' }, verdict));
       body.append(h('div', { class: 'tr-compare' },
         h('span', { class: 'tr-muted' }, t('otherSources') + ':'),
         SOURCES.filter(src => src !== state.source).map(src => {
           const o = cmp[src] || { loading: true };
           const lvl = o.loading || o.error ? 0 : (o.maxLevel > o.level ? o.maxLevel : o.level) || 0;
-          const label = o.loading ? '…' : o.error ? '—' : t('level')[o.level || 0] + (o.maxLevel > o.level ? ' / ▲ ' + t('level')[o.maxLevel] : '');
+          const label = o.loading ? '…' : o.error ? '—' : t('level')[o.level || 0]
+            + (o.maxLevel > o.level ? ' / ▲ ' + t('level')[o.maxLevel] : o.regional ? ' / ▲' : '');
           return h('button', {
             type: 'button', class: 'tr-cmp lv' + lvl, title: t('followSource', { source: SOURCE[src] }), onclick: () => setSource(src),
           }, h('b', {}, SOURCE_SHORT[src]), ' ', label);
@@ -804,6 +819,18 @@
     }
     card.append(body);
     return card;
+  }
+
+  // Most common country-wide level across all governments (ties go to the stricter one) and the strictest.
+  function consensus(own, others) {
+    const all = [[state.source, own], ...Object.entries(others)].filter(([, a]) => a && a.level);
+    if (all.length < 3) return null;
+    const count = {};
+    all.forEach(([, a]) => { count[a.level] = (count[a.level] || 0) + 1; });
+    const most = Object.keys(count).map(Number).sort((x, y) => count[y] - count[x] || y - x)[0];
+    const max = Math.max(...all.map(([, a]) => a.maxLevel || a.level));
+    const who = all.filter(([, a]) => (a.maxLevel || a.level) === max).map(([src]) => SOURCE_SHORT[src]).join(', ');
+    return t('consensus', { n: all.length, most: t('level')[most], max: t('level')[max], who });
   }
 
   function summaryLine() {
@@ -829,7 +856,12 @@
         sorted.length ? sorted.map(card) : h('div', { class: 'tr-empty' }, t('empty'))),
       state.updatedAt && h('p', { class: 'tr-muted tr-stamp' },
         t('updatedAt', { time: state.updatedAt.toLocaleTimeString(LOCALE[state.lang], { hour: '2-digit', minute: '2-digit' }) })),
-      h('footer', { class: 'tr-foot' }, t('footer', { source: SOURCE[state.source], news: NEWS[cfg.news] || '—' })));
+      h('footer', { class: 'tr-foot' },
+        h('p', {}, t('footer', { source: SOURCE[state.source], news: NEWS[cfg.news] || '—' })),
+        h('p', {}, cfg.credits[state.source], ' ', t('notEndorsed')),
+        h('details', {}, h('summary', {}, t('allSources')),
+          h('ul', {}, SOURCES.map(src => h('li', {}, cfg.credits[src])),
+            cfg.news === 'gdelt' && h('li', {}, 'News: The GDELT Project (gdeltproject.org).')))));
   }
 
   function render() {

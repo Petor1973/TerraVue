@@ -119,7 +119,7 @@ class Notify {
 
 		$old     = (array) get_option( self::OPT_SNAPSHOT, array() );
 		$new     = array();
-		$sources = new Sources( __NAMESPACE__ . '\\http_get' );
+		$sources = sources();
 		foreach ( $pairs as $key => $followers ) {
 			list( $source, $iso ) = explode( ':', $key );
 			$country              = countries()[ $iso ] ?? null;

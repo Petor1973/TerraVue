@@ -26,6 +26,11 @@ class Sources {
 	const BUZA = 'https://opendata.nederlandwereldwijd.nl/v2/sources/nederlandwereldwijd/infotypes/countries';
 	const FCDO = 'https://www.gov.uk/api/content/foreign-travel-advice';
 	const AA   = 'https://www.auswaertiges-amt.de/opendata/travelwarning';
+	// The State Department's JSON API (cadataapi) has returned an empty list since
+	// Sept 2026; the RSS feed carries one item per destination with the level.
+	const USDOS = 'https://travel.state.gov/_res/rss/TAsTWs.xml';
+	const GAC   = 'https://data.international.gc.ca/travel-voyage/index-alpha-eng.json';
+	const DFAT  = 'https://www.smartraveller.gov.au/countries/documents/index.rss';
 
 	/** Default source for a UI language, when the user has not chosen one. */
 	const BY_LANGUAGE = array(
@@ -35,16 +40,39 @@ class Sources {
 	);
 
 	const NAMES = array(
-		'buza' => 'Ministerie van Buitenlandse Zaken (NL)',
-		'fcdo' => 'Foreign, Commonwealth & Development Office (UK)',
-		'aa'   => 'Auswärtiges Amt (DE)',
+		'buza'  => 'Ministerie van Buitenlandse Zaken (NL)',
+		'fcdo'  => 'Foreign, Commonwealth & Development Office (UK)',
+		'aa'    => 'Auswärtiges Amt (DE)',
+		'usdos' => 'U.S. Department of State (US)',
+		'gac'   => 'Global Affairs Canada (CA)',
+		'dfat'  => 'Smartraveller, DFAT (AU)',
+	);
+
+	/** Each government publishes no advice for its own country. */
+	const HOME = array( 'buza' => 'NLD', 'fcdo' => 'GBR', 'aa' => 'DEU', 'usdos' => 'USA', 'gac' => 'CAN', 'dfat' => 'AUS' );
+
+	/** Licence / attribution per source, shown in the app footer and the readme. */
+	const ATTRIBUTION = array(
+		'buza'  => 'Reisadviezen: Ministerie van Buitenlandse Zaken, open data (opendata.nederlandwereldwijd.nl).',
+		'fcdo'  => 'Contains public sector information licensed under the Open Government Licence v3.0 (FCDO, GOV.UK).',
+		'aa'    => 'Reise- und Sicherheitshinweise: Auswärtiges Amt, Open-Data-Schnittstelle.',
+		'usdos' => 'Travel advisories: U.S. Department of State, Bureau of Consular Affairs (public domain).',
+		'gac'   => 'Contains information licensed under the Open Government Licence – Canada (Global Affairs Canada).',
+		'dfat'  => 'Travel advice: Smartraveller, Australian Government Department of Foreign Affairs and Trade.',
 	);
 
 	/** @var callable */
 	private $http;
 
-	public function __construct( callable $http ) {
-		$this->http = $http;
+	/** @var callable|null fn(string $key, callable $produce) — caches whole feeds between requests. */
+	private $cache;
+
+	/** Feeds already fetched by this instance (one cron run checks many countries). */
+	private $feeds = array();
+
+	public function __construct( callable $http, ?callable $cache = null ) {
+		$this->http  = $http;
+		$this->cache = $cache;
 	}
 
 	public static function for_language( string $lang ): string {
@@ -59,7 +87,16 @@ class Sources {
 	 * @param array $country Entry from data/countries.json.
 	 */
 	public function advice( string $source, array $country ): array {
+		if ( ( self::HOME[ $source ] ?? '' ) === $country['iso3'] ) {
+			throw new SourceException( 'no_home_advice' );
+		}
 		switch ( $source ) {
+			case 'usdos':
+				return self::parse_usdos( $this->feed( self::USDOS ), $country );
+			case 'gac':
+				return self::parse_gac( $this->feed( self::GAC ), $country );
+			case 'dfat':
+				return self::parse_dfat( $this->feed( self::DFAT ), $country );
 			case 'buza':
 				return $this->buza( $country );
 			case 'aa':
@@ -75,9 +112,6 @@ class Sources {
 	// ------------------------------------------------------------------
 
 	private function buza( array $country ): array {
-		if ( 'NLD' === $country['iso3'] ) {
-			throw new SourceException( 'no_home_advice' );
-		}
 		$res = $this->get( self::BUZA . '/' . strtolower( $country['iso3'] ) . '/traveladvice' );
 		if ( 404 === $res['status'] ) {
 			$res = $this->get( self::BUZA . '/' . self::slug( $country['nl'] ) . '/traveladvice' );
@@ -154,8 +188,8 @@ class Sources {
 	// ------------------------------------------------------------------
 
 	private function fcdo( array $country ): array {
-		if ( 'GBR' === $country['iso3'] || empty( $country['uk'] ) ) {
-			throw new SourceException( 'no_home_advice' );
+		if ( empty( $country['uk'] ) ) {
+			throw new SourceException( 'not_found' );
 		}
 		$res = $this->get( self::FCDO . '/' . rawurlencode( $country['uk'] ) );
 		self::expect_ok( $res );
@@ -173,6 +207,9 @@ class Sources {
 		if ( $has( 'avoid_all_travel_to_whole_country' ) ) {
 			$level = 4;
 		} elseif ( $has( 'avoid_all_but_essential_travel_to_whole_country' ) ) {
+			$level = 3;
+		} elseif ( $has( 'avoid_all_travel_to_parts' ) && $has( 'avoid_all_but_essential_travel_to_parts' ) ) {
+			// Two regional tiers: the lower one covers what the higher one does not (e.g. Ukraine).
 			$level = 3;
 		} elseif ( $status ) {
 			$level = 2;
@@ -210,12 +247,7 @@ class Sources {
 	// ------------------------------------------------------------------
 
 	private function aa( array $country ): array {
-		if ( 'DEU' === $country['iso3'] ) {
-			throw new SourceException( 'no_home_advice' );
-		}
-		$list = $this->get( self::AA );
-		self::expect_ok( $list );
-		$id = self::aa_find( $list['body'], $country['iso3'] );
+		$id = self::aa_find( $this->feed( self::AA ), $country['iso3'] );
 		if ( null === $id ) {
 			throw new SourceException( 'not_found' );
 		}
@@ -270,8 +302,178 @@ class Sources {
 	}
 
 	// ------------------------------------------------------------------
+	// United States: State Department travel advisories (RSS, public domain).
+	// Title "Saudi Arabia - Level 3: Reconsider Travel"; regional levels only in the text.
+	// ------------------------------------------------------------------
+
+	public static function parse_usdos( string $xml, array $country ): array {
+		foreach ( self::rss_items( $xml ) as $item ) {
+			if ( ! preg_match( '/^(?<name>.+?)\s*[-–]\s*Level\s*(?<level>[1-4])\s*:/u', $item['title'], $m ) ) {
+				continue;
+			}
+			$name = preg_replace( '/\s*(?:[-–]\s*See\s+Summaries|Travel\s+Advisory)\s*$/i', '', $m['name'] );
+			if ( ! self::name_matches( $name, $country ) ) {
+				continue;
+			}
+			$level = (int) $m['level'];
+			$text  = self::text( $item['description'] );
+			$max   = $level;
+			if ( preg_match_all( '/Level\s*([1-4])\b/i', $text, $levels ) ) {
+				$max = max( $level, ...array_map( 'intval', $levels[1] ) );
+			}
+			if ( preg_match( '/do not travel to\b/i', $text ) ) {
+				$max = 4;
+			}
+			return array(
+				'source'   => 'usdos',
+				'level'    => $level,
+				'maxLevel' => $max,
+				'summary'  => self::shorten( $text ),
+				'url'      => $item['link'],
+				'updated'  => self::iso_date( $item['pubDate'] ),
+			);
+		}
+		throw new SourceException( 'not_found' );
+	}
+
+	// ------------------------------------------------------------------
+	// Canada: Travel Advice and Advisories, one JSON index (Open Government Licence – Canada).
+	// advisory-state 0..3 = our levels 1..4; regional advisories are flagged, not listed.
+	// ------------------------------------------------------------------
+
+	public static function parse_gac( string $json, array $country ): array {
+		$data  = json_decode( $json, true );
+		$entry = $data['data'][ $country['iso2'] ] ?? null;
+		if ( ! is_array( $data ) || ! isset( $data['data'] ) ) {
+			throw new SourceException( 'unexpected_response' );
+		}
+		if ( ! is_array( $entry ) ) {
+			throw new SourceException( 'not_found' );
+		}
+		$eng   = (array) ( $entry['eng'] ?? array() );
+		$state = $entry['advisory-state'] ?? null;
+		$level = is_int( $state ) && $state >= 0 && $state <= 3 ? $state + 1 : self::level_from_phrase( (string) ( $eng['advisory-text'] ?? '' ) );
+		$slug  = (string) ( $eng['url-slug'] ?? '' );
+		$text  = trim( ( $eng['advisory-text'] ?? '' ) . '. ' . self::text( (string) ( $eng['recent-updates'] ?? '' ) ), ' .' );
+		return array(
+			'source'   => 'gac',
+			'level'    => $level,
+			'maxLevel' => $level,
+			'regional' => ! empty( $entry['has-regional-advisory'] ) && $level < 4,
+			'summary'  => self::shorten( $text . '.' ),
+			'url'      => 'https://travel.gc.ca/destinations/' . ( $slug ?: '' ),
+			'updated'  => self::iso_date( $entry['date-published']['date'] ?? null ),
+		);
+	}
+
+	// ------------------------------------------------------------------
+	// Australia: Smartraveller RSS. The overall advice is in <ta:warnings><ta:description>;
+	// stricter regional advice only appears in the text ("Do not travel to ...").
+	// ------------------------------------------------------------------
+
+	public static function parse_dfat( string $xml, array $country ): array {
+		foreach ( self::rss_items( $xml ) as $item ) {
+			$slug = basename( (string) parse_url( $item['link'], PHP_URL_PATH ) );
+			if ( ! self::name_matches( $item['title'], $country ) && ! self::name_matches( str_replace( '-', ' ', $slug ), $country ) ) {
+				continue;
+			}
+			$overall = preg_match( '/<ta:description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/ta:description>/', $item['raw'], $d ) ? self::text( $d[1] ) : '';
+			$level   = self::level_from_phrase( $overall );
+			$text    = self::text( $item['description'] );
+			$max     = $level;
+			if ( preg_match( '/do not travel to\b/i', $text ) ) {
+				$max = 4;
+			} elseif ( preg_match( '/reconsider your need to travel to\b/i', $text ) ) {
+				$max = max( (int) $max, 3 );
+			}
+			return array(
+				'source'   => 'dfat',
+				'level'    => $level,
+				'maxLevel' => $level ? max( $level, $max ) : null,
+				'summary'  => self::shorten( trim( $overall . '. ' . $text, ' .' ) . '.' ),
+				'url'      => $item['link'],
+				'updated'  => self::iso_date( $item['pubDate'] ),
+			);
+		}
+		throw new SourceException( 'not_found' );
+	}
+
+	/** The four-step wording Canada, Australia and the US use. */
+	public static function level_from_phrase( string $text ): ?int {
+		$t = strtolower( $text );
+		if ( preg_match( '/do not travel|avoid all travel/', $t ) && ! preg_match( '/non-essential|but essential/', $t ) ) {
+			return 4;
+		}
+		if ( preg_match( '/reconsider (your need to )?travel|avoid non-essential travel/', $t ) ) {
+			return 3;
+		}
+		if ( preg_match( '/high degree of caution|increased caution/', $t ) ) {
+			return 2;
+		}
+		if ( preg_match( '/normal (safety|security)? ?precautions/', $t ) ) {
+			return 1;
+		}
+		return null;
+	}
+
+	/** @return array<int,array{title:string,link:string,description:string,pubDate:?string,raw:string}> */
+	public static function rss_items( string $xml ): array {
+		if ( ! preg_match_all( '/<item\b[^>]*>([\s\S]*?)<\/item>/', $xml, $m ) ) {
+			throw new SourceException( 'unexpected_response' );
+		}
+		return array_map(
+			fn( $raw ) => array(
+				'title'       => self::text( self::xml_field( $raw, 'title' ) ?? '' ),
+				'link'        => trim( html_entity_decode( self::xml_field( $raw, 'link' ) ?? '' ) ),
+				'description' => html_entity_decode( self::xml_field( $raw, 'description' ) ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+				'pubDate'     => self::xml_field( $raw, 'pubDate' ),
+				'raw'         => $raw,
+			),
+			$m[1]
+		);
+	}
+
+	/**
+	 * Feed names differ from ours ("Burma (Myanmar)", "Mainland China, Hong Kong & Macau",
+	 * "The Bahamas"). Compares normalised names, including the parts of combined titles
+	 * and any aliases in countries.json ("alt").
+	 */
+	public static function name_matches( string $feed_name, array $country ): bool {
+		$feed_keys = array( self::name_key( $feed_name ) );
+		if ( preg_match( '/^(.*?)\s*\((.*)\)\s*$/', $feed_name, $p ) ) {
+			$feed_keys[] = self::name_key( $p[1] );
+			$feed_keys[] = self::name_key( $p[2] );
+		}
+		foreach ( preg_split( '/\s*(?:,|&|\band\b)\s*/i', $feed_name ) as $part ) {
+			$feed_keys[] = self::name_key( preg_replace( '/^mainland\s+/i', '', $part ) );
+		}
+		$ours = array_map( array( self::class, 'name_key' ), array_merge( array( $country['en'] ), (array) ( $country['alt'] ?? array() ) ) );
+		return (bool) array_intersect( array_filter( $feed_keys ), $ours );
+	}
+
+	public static function name_key( string $name ): string {
+		$ascii = strtolower( (string) iconv( 'UTF-8', 'ASCII//TRANSLIT//IGNORE', $name ) );
+		$ascii = preg_replace( '/[^a-z0-9]+/', ' ', $ascii );
+		return trim( preg_replace( '/^the\s+/', '', trim( $ascii ) ) );
+	}
+
+	// ------------------------------------------------------------------
 	// Helpers
 	// ------------------------------------------------------------------
+
+	/** Whole feeds (US, Canada, Australia, AA list) are fetched once and shared by all countries. */
+	private function feed( string $url ): string {
+		if ( isset( $this->feeds[ $url ] ) ) {
+			return $this->feeds[ $url ];
+		}
+		$fetch = function () use ( $url ) {
+			$res = $this->get( $url );
+			self::expect_ok( $res );
+			return $res['body'];
+		};
+		$this->feeds[ $url ] = $this->cache ? ( $this->cache )( 'feed:' . $url, $fetch ) : $fetch();
+		return $this->feeds[ $url ];
+	}
 
 	private function get( string $url ): array {
 		return ( $this->http )( $url );
@@ -321,3 +523,4 @@ class Sources {
 		return $t ? gmdate( 'c', $t ) : null;
 	}
 }
+

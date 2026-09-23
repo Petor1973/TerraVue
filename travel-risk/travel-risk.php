@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Terravue – Travel Risk Monitor
  * Description:       Official travel advice (NL, UK, DE) and recent security news per country, as an installable web app. Place the shortcode [travel_risk] on a page.
- * Version:           0.2.0
+ * Version:           0.3.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Peter Langerak
@@ -14,7 +14,7 @@ namespace TravelRisk;
 
 defined( 'ABSPATH' ) || exit;
 
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 const FILE    = __FILE__;
 const DIR     = __DIR__;
 
@@ -23,6 +23,8 @@ const LANGUAGES = array( 'en', 'de', 'nl' );
 
 require_once DIR . '/includes/Sources.php';
 require_once DIR . '/includes/News.php';
+require_once DIR . '/includes/WebPush.php';
+require_once DIR . '/includes/Notify.php';
 require_once DIR . '/includes/Auth.php';
 require_once DIR . '/includes/Rest.php';
 require_once DIR . '/includes/Pwa.php';
@@ -61,6 +63,12 @@ function countries(): array {
 	return $map;
 }
 
+/** Array stored in user meta; get_user_meta() returns '' when nothing is stored. */
+function user_list( int $user_id, string $key ): array {
+	$value = get_user_meta( $user_id, $key, true );
+	return is_array( $value ) ? array_values( $value ) : array();
+}
+
 function language( $value ): string {
 	return in_array( $value, LANGUAGES, true ) ? $value : LANGUAGES[0];
 }
@@ -91,8 +99,13 @@ function cached( string $key, callable $fn ) {
 		return $hit;
 	}
 	$value = $fn();
-	set_transient( $key, $value, max( 5, (int) setting( 'cache_minutes' ) ) * MINUTE_IN_SECONDS );
+	cache_put( $key, $value, false );
 	return $value;
+}
+
+function cache_put( string $key, $value, bool $hash = true ): void {
+	$key = $hash ? 'travel_risk_' . md5( $key ) : $key;
+	set_transient( $key, $value, max( 5, (int) setting( 'cache_minutes' ) ) * MINUTE_IN_SECONDS );
 }
 
 /** URL of the page holding the app (used as PWA start_url and magic link target). */
@@ -102,16 +115,25 @@ function app_url(): string {
 }
 
 Auth::init();
+Notify::init();
 Rest::init();
 Pwa::init();
 Frontend::init();
 Privacy::init();
 Admin::init();
 
+register_deactivation_hook( FILE, array( Notify::class, 'unschedule' ) );
 register_uninstall_hook( FILE, __NAMESPACE__ . '\\uninstall' );
 
 function uninstall(): void {
 	delete_option( 'travel_risk_settings' );
+	delete_option( Notify::OPT_VAPID );
+	delete_option( Notify::OPT_SNAPSHOT );
+	delete_option( Notify::OPT_LAST );
+	delete_option( 'travel_risk_gdelt_last' );
+	Notify::unschedule();
+	delete_metadata( 'user', 0, Notify::META_PUSH, '', true );
+	delete_metadata( 'user', 0, Notify::META_EMAIL, '', true );
 	delete_metadata( 'user', 0, Auth::META_COUNTRIES, '', true );
 	delete_metadata( 'user', 0, Auth::META_LANG, '', true );
 	delete_metadata( 'user', 0, Auth::META_CONSENT, '', true );

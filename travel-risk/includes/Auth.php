@@ -7,8 +7,12 @@
  * the server in a GET request and mail scanners that prefetch links (Outlook
  * Safe Links etc.) cannot use it up. The app posts it to /login/verify.
  *
- * Personal data stored: e-mail address (WordPress user), consent timestamp,
- * chosen countries and UI language (user meta). Nothing else.
+ * The same mail carries a 6-digit code for devices where the link opens in a
+ * different browser than the app (iOS home-screen apps have their own
+ * cookies). A code allows MAX_CODE_TRIES attempts, then both expire.
+ *
+ * Personal data stored here: e-mail address (WordPress user), consent timestamp,
+ * chosen countries and UI language (user meta). Notification data: see Notify.
  */
 
 namespace TravelRisk;
@@ -24,6 +28,7 @@ class Auth {
 	const TOKEN_TTL     = 30 * MINUTE_IN_SECONDS;
 	const MAX_PER_EMAIL = 3;   // link requests per address per hour
 	const MAX_PER_IP    = 10;  // link requests per IP per hour
+	const MAX_CODE_TRIES = 5;
 
 	public static function init(): void {
 		add_filter( 'show_admin_bar', array( self::class, 'admin_bar' ) );
@@ -53,11 +58,18 @@ class Auth {
 			return;
 		}
 
-		$token = bin2hex( random_bytes( 32 ) );
-		set_transient( self::token_key( $token ), array( 'email' => $email, 'lang' => $lang ), self::TOKEN_TTL );
+		$token     = bin2hex( random_bytes( 32 ) );
+		$code      = sprintf( '%06d', random_int( 0, 999999 ) );
+		$token_key = self::token_key( $token );
+		set_transient( $token_key, array( 'email' => $email, 'lang' => $lang ), self::TOKEN_TTL );
+		set_transient(
+			self::code_key( $email ),
+			array( 'code' => self::code_hash( $code ), 'token_key' => $token_key, 'tries' => 0 ),
+			self::TOKEN_TTL
+		);
 
 		$link  = app_url() . '#tr-login=' . $token;
-		$texts = self::mail_texts( $lang, setting( 'brand_name' ), $link );
+		$texts = self::mail_texts( $lang, setting( 'brand_name' ), $link, $code );
 		wp_mail( $email, $texts[0], $texts[1] );
 	}
 
@@ -72,7 +84,36 @@ class Auth {
 			return new \WP_Error( 'expired_token', 'expired_token', array( 'status' => 410 ) );
 		}
 		delete_transient( $key );
+		delete_transient( self::code_key( $data['email'] ) );
+		return self::sign_in( $data );
+	}
 
+	/** @return int|\WP_Error User ID. */
+	public static function verify_code( string $email, string $code ) {
+		$email = sanitize_email( $email );
+		$key   = self::code_key( $email );
+		$entry = get_transient( $key );
+		$data  = $entry ? get_transient( $entry['token_key'] ) : false;
+		if ( ! $entry || ! $data ) {
+			return new \WP_Error( 'expired_token', 'expired_token', array( 'status' => 410 ) );
+		}
+		if ( ! hash_equals( $entry['code'], self::code_hash( preg_replace( '/\D/', '', $code ) ) ) ) {
+			$entry['tries']++;
+			if ( $entry['tries'] >= self::MAX_CODE_TRIES ) {
+				delete_transient( $key );
+				delete_transient( $entry['token_key'] );
+				return new \WP_Error( 'expired_token', 'expired_token', array( 'status' => 410 ) );
+			}
+			set_transient( $key, $entry, self::TOKEN_TTL );
+			return new \WP_Error( 'invalid_code', 'invalid_code', array( 'status' => 400 ) );
+		}
+		delete_transient( $key );
+		delete_transient( $entry['token_key'] );
+		return self::sign_in( $data );
+	}
+
+	/** Creates the account on first confirmation and starts a session. */
+	private static function sign_in( array $data ) {
 		$user = get_user_by( 'email', $data['email'] );
 		if ( $user && user_can( $user, 'edit_posts' ) ) {
 			return new \WP_Error( 'invalid_token', 'invalid_token', array( 'status' => 400 ) );
@@ -108,6 +149,14 @@ class Auth {
 		return 'travel_risk_tok_' . hash( 'sha256', $token );
 	}
 
+	private static function code_key( string $email ): string {
+		return 'travel_risk_code_' . hash( 'sha256', strtolower( $email ) );
+	}
+
+	private static function code_hash( string $code ): string {
+		return hash_hmac( 'sha256', $code, wp_salt( 'auth' ) );
+	}
+
 	/** Counters are keyed by hash only; no addresses or IPs are stored in clear. */
 	private static function within_limit( string $what, int $max ): bool {
 		$key   = 'travel_risk_rl_' . hash( 'sha256', wp_salt() . $what );
@@ -124,22 +173,22 @@ class Auth {
 	}
 
 	/** @return array{0:string,1:string} [subject, body] */
-	public static function mail_texts( string $lang, string $brand, string $link ): array {
+	public static function mail_texts( string $lang, string $brand, string $link, string $code ): array {
 		$texts = array(
 			'en' => array(
 				'Your sign-in link for %1$s',
-				"Hello,\n\nUse the link below to sign in to %1\$s. It is valid for 30 minutes and can be used once.\n\n%2\$s\n\nDid not request this? Then you can ignore this e-mail; no account will be created.\n\n%1\$s",
+				"Hello,\n\nUse the link below to sign in to %1\$s. It is valid for 30 minutes and can be used once.\n\n%2\$s\n\nUsing the installed app? Enter this code in the app instead:\n\n    %3\$s\n\nDid not request this? Then you can ignore this e-mail; no account will be created.\n\n%1\$s",
 			),
 			'de' => array(
 				'Ihr Anmeldelink für %1$s',
-				"Hallo,\n\nmit dem folgenden Link melden Sie sich bei %1\$s an. Er ist 30 Minuten gültig und nur einmal verwendbar.\n\n%2\$s\n\nSie haben das nicht angefordert? Dann ignorieren Sie diese E-Mail; es wird kein Konto angelegt.\n\n%1\$s",
+				"Hallo,\n\nmit dem folgenden Link melden Sie sich bei %1\$s an. Er ist 30 Minuten gültig und nur einmal verwendbar.\n\n%2\$s\n\nSie nutzen die installierte App? Geben Sie stattdessen diesen Code in der App ein:\n\n    %3\$s\n\nSie haben das nicht angefordert? Dann ignorieren Sie diese E-Mail; es wird kein Konto angelegt.\n\n%1\$s",
 			),
 			'nl' => array(
 				'Je inloglink voor %1$s',
-				"Hallo,\n\nMet de link hieronder log je in bij %1\$s. De link is 30 minuten geldig en één keer te gebruiken.\n\n%2\$s\n\nNiet aangevraagd? Dan kun je deze e-mail negeren; er wordt geen account aangemaakt.\n\n%1\$s",
+				"Hallo,\n\nMet de link hieronder log je in bij %1\$s. De link is 30 minuten geldig en één keer te gebruiken.\n\n%2\$s\n\nGebruik je de geïnstalleerde app? Vul dan deze code in de app in:\n\n    %3\$s\n\nNiet aangevraagd? Dan kun je deze e-mail negeren; er wordt geen account aangemaakt.\n\n%1\$s",
 			),
 		);
 		$t = $texts[ language( $lang ) ];
-		return array( sprintf( $t[0], $brand ), sprintf( $t[1], $brand, $link ) );
+		return array( sprintf( $t[0], $brand ), sprintf( $t[1], $brand, $link, $code ) );
 	}
 }

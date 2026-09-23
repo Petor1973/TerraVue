@@ -92,6 +92,21 @@ class Admin {
 						</td>
 					</tr>
 					<tr>
+						<th scope="row">Notifications</th>
+						<td>
+							<?php
+							$last = (int) get_option( Notify::OPT_LAST );
+							$next = wp_next_scheduled( Notify::CRON );
+							?>
+							<p>Users can turn on push and e-mail notifications in the app. The advice for followed countries is checked every hour.</p>
+							<p class="description">
+								Last check: <?php echo $last ? esc_html( human_time_diff( $last ) . ' ago' ) : 'not yet'; ?>.
+								Next: <?php echo $next ? esc_html( 'in ' . human_time_diff( $next ) ) : 'not scheduled'; ?>.
+								WP-Cron only runs when the site has visitors. For reliable notifications, add <code>define( 'DISABLE_WP_CRON', true );</code> to wp-config.php and a server cron job that calls <code>wp-cron.php</code> (or <code>wp cron event run --due-now</code>) every 5–15 minutes.
+							</p>
+						</td>
+					</tr>
+					<tr>
 						<th scope="row"><label for="tr-news">News source</label></th>
 						<td>
 							<select id="tr-news" name="<?php echo esc_attr( $name( 'news_provider' ) ); ?>">

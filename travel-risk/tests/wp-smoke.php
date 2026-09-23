@@ -63,6 +63,33 @@ ok( 'consent timestamp stored', (bool) get_user_meta( $user->ID, 'travel_risk_co
 ok( 'language from request stored', 'de' === get_user_meta( $user->ID, 'travel_risk_lang', true ) );
 ok( 'token single use', 410 === call( 'POST', 'login/verify', array( 'token' => $m[1] ) )->get_status() );
 
+// sign-in code (second address; the link above is already used)
+wp_set_current_user( 0 );
+$email2 = 'code+' . wp_rand() . '@example.com';
+call( 'POST', 'login', array( 'email' => $email2, 'consent' => true, 'lang' => 'nl' ) );
+$mail = (string) @file_get_contents( WP_CONTENT_DIR . '/last-mail.txt' );
+preg_match( '/^\s+(\d{6})$/m', $mail, $c );
+ok( 'mail contains 6-digit code (NL)', ! empty( $c[1] ) && str_contains( $mail, 'code in de app' ) );
+$wrong = str_pad( (string) ( ( (int) $c[1] + 1 ) % 1000000 ), 6, '0', STR_PAD_LEFT );
+ok( 'wrong code refused', 400 === call( 'POST', 'login/verify', array( 'email' => $email2, 'code' => $wrong ) )->get_status() );
+$r = call( 'POST', 'login/verify', array( 'email' => $email2, 'code' => $c[1] ) );
+ok( 'right code signs in and creates account', 200 === $r->get_status() && get_user_by( 'email', $email2 ), $r->get_data() );
+ok( 'code single use', 410 === call( 'POST', 'login/verify', array( 'email' => $email2, 'code' => $c[1] ) )->get_status() );
+preg_match( '/#tr-login=([a-f0-9]{64})/', $mail, $m2 );
+ok( 'link of same mail is spent after code use', 410 === call( 'POST', 'login/verify', array( 'token' => $m2[1] ) )->get_status() );
+
+wp_set_current_user( 0 );
+$email3 = 'guess+' . wp_rand() . '@example.com';
+call( 'POST', 'login', array( 'email' => $email3, 'consent' => true ) );
+preg_match( '/^\s+(\d{6})$/m', (string) @file_get_contents( WP_CONTENT_DIR . '/last-mail.txt' ), $c3 );
+$statuses = array();
+for ( $i = 0; $i < 5; $i++ ) {
+	$statuses[] = call( 'POST', 'login/verify', array( 'email' => $email3, 'code' => $c3[1] === '000000' ? '111111' : '000000' ) )->get_status();
+}
+ok( 'five wrong guesses expire the code', array( 400, 400, 400, 400, 410 ) === $statuses, $statuses );
+ok( 'even the right code fails after that', 410 === call( 'POST', 'login/verify', array( 'email' => $email3, 'code' => $c3[1] ) )->get_status() );
+wp_delete_user( get_user_by( 'email', $email2 )->ID );
+
 // signed in
 wp_set_current_user( $user->ID );
 $r = call( 'PUT', 'me', array( 'countries' => array( 'sau', 'NOR', 'XXX', 'SAU' ), 'lang' => 'nl' ) );
@@ -86,9 +113,82 @@ ok( 'news', 200 === $r->get_status() && 2 === count( $r->get_data()['items'] ), 
 $page = (int) TravelRisk\setting( 'app_page_id' );
 ok( 'manifest start_url is app page in app mode', TravelRisk\Pwa::manifest()['start_url'] === add_query_arg( 'tr_app', '1', $page ? get_permalink( $page ) : home_url( '/' ) ) );
 
+// push devices
+$ua   = openssl_pkey_new( array( 'curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC ) );
+$keys = array( 'p256dh' => TravelRisk\WebPush::b64url( TravelRisk\WebPush::raw_public( $ua ) ), 'auth' => TravelRisk\WebPush::b64url( random_bytes( 16 ) ) );
+$key  = call( 'GET', 'push/key' )->get_data()['publicKey'];
+ok( 'vapid public key is a P-256 point', 65 === strlen( TravelRisk\WebPush::b64url_decode( $key ) ) );
+ok( 'vapid key stable', $key === call( 'GET', 'push/key' )->get_data()['publicKey'] );
+ok( 'push endpoint on unknown host refused (no SSRF)', 400 === call( 'POST', 'push', array( 'endpoint' => 'https://169.254.169.254/latest', 'keys' => $keys ) )->get_status() );
+ok( 'push endpoint over http refused', 400 === call( 'POST', 'push', array( 'endpoint' => 'http://fcm.googleapis.com/fcm/send/x', 'keys' => $keys ) )->get_status() );
+ok( 'push with bad keys refused', 400 === call( 'POST', 'push', array( 'endpoint' => 'https://fcm.googleapis.com/fcm/send/x', 'keys' => array( 'p256dh' => 'abc', 'auth' => 'def' ) ) )->get_status() );
+$r = call( 'POST', 'push', array( 'endpoint' => 'https://fcm.googleapis.com/fcm/send/device-1', 'keys' => $keys ) );
+ok( 'device registered', 200 === $r->get_status() && 1 === $r->get_data()['pushDevices'], $r->get_data() );
+call( 'POST', 'push', array( 'endpoint' => 'https://web.push.apple.com/device-2', 'keys' => $keys ) );
+call( 'POST', 'push', array( 'endpoint' => 'https://fcm.googleapis.com/fcm/send/device-1', 'keys' => $keys ) );
+ok( 'same device not stored twice', 2 === call( 'GET', 'me' )->get_data()['pushDevices'] );
+
+// Capture pushes; device-2 answers 410 (gone) and must be removed.
+$GLOBALS['travel_risk_pushes'] = array();
+add_filter( 'pre_http_request', function ( $pre, $args, $url ) {
+	if ( ! preg_match( '#^https://(fcm\.googleapis\.com|web\.push\.apple\.com)/#', $url ) ) {
+		return $pre;
+	}
+	$GLOBALS['travel_risk_pushes'][] = array( 'url' => $url, 'args' => $args );
+	$code = str_contains( $url, 'device-2' ) ? 410 : 201;
+	return array( 'headers' => array(), 'body' => '', 'response' => array( 'code' => $code, 'message' => '' ), 'cookies' => array(), 'filename' => null );
+}, 5, 3 );
+
+$r = call( 'POST', 'push/test' );
+ok( 'test push: 1 sent, 1 gone', array( 'sent' => 1, 'failed' => 1 ) === $r->get_data(), $r->get_data() );
+ok( 'gone device removed', 1 === call( 'GET', 'me' )->get_data()['pushDevices'] );
+$p = $GLOBALS['travel_risk_pushes'][0];
+ok( 'push request is encrypted and signed', 'aes128gcm' === $p['args']['headers']['Content-Encoding'] && str_starts_with( $p['args']['headers']['Authorization'], 'vapid t=' ) && ! str_contains( $p['args']['body'], 'Notifications' ) );
+
+// e-mail preference
+ok( 'e-mail notifications on', true === call( 'PUT', 'me', array( 'notifyEmail' => true ) )->get_data()['notifyEmail'] );
+
+// hourly check: first run is the baseline, a change triggers push + e-mail
+update_user_meta( $user->ID, TravelRisk\Auth::META_LANG, 'en' );
+delete_option( TravelRisk\Notify::OPT_SNAPSHOT );
+$GLOBALS['travel_risk_pushes'] = array();
+@unlink( WP_CONTENT_DIR . '/last-mail.txt' );
+TravelRisk\Notify::check();
+$snap = get_option( TravelRisk\Notify::OPT_SNAPSHOT );
+ok( 'baseline stored per source and country', isset( $snap['fcdo:SAU'], $snap['fcdo:NOR'] ) && 2 === $snap['fcdo:SAU']['level'], $snap );
+ok( 'no notification on baseline', ! $GLOBALS['travel_risk_pushes'] && ! file_exists( WP_CONTENT_DIR . '/last-mail.txt' ) );
+
+TravelRisk\Notify::check();
+ok( 'no notification without change', ! $GLOBALS['travel_risk_pushes'] );
+
+$raise = function ( $pre, $args, $url ) {
+	if ( ! str_contains( $url, 'foreign-travel-advice/saudi-arabia' ) ) {
+		return $pre;
+	}
+	$body = wp_json_encode( array( 'description' => 'Saudi', 'public_updated_at' => '2026-09-24T08:00:00Z', 'details' => array( 'alert_status' => array( 'avoid_all_travel_to_whole_country' ), 'parts' => array() ) ) );
+	return array( 'headers' => array(), 'body' => $body, 'response' => array( 'code' => 200, 'message' => 'OK' ), 'cookies' => array(), 'filename' => null );
+};
+add_filter( 'pre_http_request', $raise, 6, 3 );
+TravelRisk\Notify::check();
+remove_filter( 'pre_http_request', $raise, 6 );
+ok( 'change: one push sent', 1 === count( $GLOBALS['travel_risk_pushes'] ), count( $GLOBALS['travel_risk_pushes'] ) );
+$mail = (string) @file_get_contents( WP_CONTENT_DIR . '/last-mail.txt' );
+ok( 'change: e-mail sent', str_starts_with( $mail, $email ) && str_contains( $mail, 'Travel advice changed: Saudi Arabia' ) && str_contains( $mail, 'Exercise caution → Do not travel' ), $mail );
+ok( 'snapshot updated', 4 === get_option( TravelRisk\Notify::OPT_SNAPSHOT )['fcdo:SAU']['level'] );
+ok( 'app cache refreshed by check', 4 === call( 'GET', 'advice/SAU', array( 'lang' => 'en' ) )->get_data()['level'] );
+
+$msg = TravelRisk\Notify::message( 'de', TravelRisk\countries()['SAU'], array( 'level' => 2, 'maxLevel' => 2 ), array( 'level' => 2, 'maxLevel' => 4 ) );
+ok( 'message for regional change (DE)', 'Reisehinweis geändert: Saudi-Arabien' === $msg['title'] && str_contains( $msg['body'], 'Erhöhte Vorsicht (max) → Reisewarnung (max)' ), $msg );
+
+// remove device via DELETE with JSON body
+$r = call( 'DELETE', 'push', array( 'endpoint' => 'https://fcm.googleapis.com/fcm/send/device-1' ) );
+ok( 'device removed', 0 === $r->get_data()['pushDevices'], $r->get_data() );
+call( 'POST', 'push', array( 'endpoint' => 'https://fcm.googleapis.com/fcm/send/device-1', 'keys' => $keys ) );
+
 // privacy tools
 $export = TravelRisk\Privacy::export( $email );
 ok( 'privacy export has countries', str_contains( wp_json_encode( $export ), 'SAU, NOR' ) );
+ok( 'privacy export has notification data', str_contains( wp_json_encode( $export ), 'fcm.googleapis.com' ) && str_contains( wp_json_encode( $export ), '"on"' ) );
 
 // delete own account
 $r = call( 'DELETE', 'me' );

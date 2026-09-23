@@ -1,16 +1,18 @@
 <?php
 /**
- * Unit tests for the source and news parsers. No WordPress needed.
+ * Unit tests for the source and news parsers and Web Push crypto. No WordPress needed.
  * Run: php tests/unit.php
  */
 
 define( 'TRAVEL_RISK_TESTING', true );
 require __DIR__ . '/../includes/Sources.php';
 require __DIR__ . '/../includes/News.php';
+require __DIR__ . '/../includes/WebPush.php';
 
 use TravelRisk\Sources;
 use TravelRisk\News;
 use TravelRisk\SourceException;
+use TravelRisk\WebPush;
 
 $failed = 0;
 $count  = 0;
@@ -172,6 +174,65 @@ check( 'gdelt: plain-text error', $threw, 'http_200' );
 $rss   = '<rss><channel><item><title>Protest in capital &amp; curfew</title><link>https://news.example/1</link><pubDate>Tue, 22 Sep 2026 09:00:00 GMT</pubDate><source url="https://x">Example Times</source></item></channel></rss>';
 $items = News::parse_rss( $rss );
 check( 'rss: parsed', array( $items[0]['title'], $items[0]['source'], $items[0]['date'] ), array( 'Protest in capital & curfew', 'Example Times', '2026-09-22T09:00:00+00:00' ) );
+
+
+// ---------------------------------------------------------------- Web Push (RFC 8291 / 8292)
+// Decryption here is an independent, test-only implementation of the receiving side.
+function test_decrypt( string $body, $ua_key, string $auth ): string {
+	$salt      = substr( $body, 0, 16 );
+	$idlen     = ord( $body[20] );
+	$as_public = substr( $body, 21, $idlen );
+	$data      = substr( $body, 21 + $idlen );
+	$ua_public = WebPush::raw_public( $ua_key );
+	$shared    = openssl_pkey_derive( openssl_pkey_get_public( WebPush::pem_public( $as_public ) ), $ua_key );
+	$prk_key   = hash_hmac( 'sha256', $shared, $auth, true );
+	$ikm       = hash_hmac( 'sha256', "WebPush: info\0" . $ua_public . $as_public . "\x01", $prk_key, true );
+	$prk       = hash_hmac( 'sha256', $ikm, $salt, true );
+	$cek       = substr( hash_hmac( 'sha256', "Content-Encoding: aes128gcm\0\x01", $prk, true ), 0, 16 );
+	$nonce     = substr( hash_hmac( 'sha256', "Content-Encoding: nonce\0\x01", $prk, true ), 0, 12 );
+	$plain     = openssl_decrypt( substr( $data, 0, -16 ), 'aes-128-gcm', $cek, OPENSSL_RAW_DATA, $nonce, substr( $data, -16 ) );
+	return false === $plain ? 'DECRYPT FAILED' : rtrim( $plain, "\x00" );
+}
+function raw_to_der( string $raw ): string {
+	$int = function ( string $x ) {
+		$x = ltrim( $x, "\x00" );
+		if ( ord( $x[0] ) & 0x80 ) {
+			$x = "\x00" . $x;
+		}
+		return "\x02" . chr( strlen( $x ) ) . $x;
+	};
+	$seq = $int( substr( $raw, 0, 32 ) ) . $int( substr( $raw, 32 ) );
+	return "\x30" . chr( strlen( $seq ) ) . $seq;
+}
+
+$ua      = openssl_pkey_new( array( 'curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC ) );
+$ua_auth = random_bytes( 16 );
+$message = '{"title":"Saudi Arabia","body":"Exercise caution → Do not travel ✓"}';
+$body    = WebPush::encrypt( $message, WebPush::raw_public( $ua ), $ua_auth );
+check( 'push: header = salt, record size 4096, 65-byte key', array( unpack( 'N', substr( $body, 16, 4 ) )[1], ord( $body[20] ) ), array( 4096, 65 ) );
+check( 'push: decrypts with padding delimiter 0x02', test_decrypt( $body, $ua, $ua_auth ), $message . "\x02" );
+check( 'push: fresh salt and key every message', substr( $body, 0, 86 ) !== substr( WebPush::encrypt( $message, WebPush::raw_public( $ua ), $ua_auth ), 0, 86 ), true );
+check( 'push: wrong auth secret fails', test_decrypt( $body, $ua, random_bytes( 16 ) ), 'DECRYPT FAILED' );
+
+$vapid = WebPush::generate_vapid_keys();
+$req   = WebPush::request(
+	array( 'endpoint' => 'https://fcm.googleapis.com/fcm/send/xyz', 'p256dh' => WebPush::b64url( WebPush::raw_public( $ua ) ), 'auth' => WebPush::b64url( $ua_auth ) ),
+	$message,
+	$vapid + array( 'subject' => 'mailto:admin@example.com' )
+);
+preg_match( '/^vapid t=([^,]+), k=(.+)$/', $req['headers']['Authorization'], $m );
+list( $jh, $jc, $js ) = explode( '.', $m[1] );
+$claims = json_decode( WebPush::b64url_decode( $jc ), true );
+check( 'vapid: audience is push service origin', $claims['aud'], 'https://fcm.googleapis.com' );
+check( 'vapid: subject and expiry', array( $claims['sub'], $claims['exp'] > time() && $claims['exp'] <= time() + 86400 ), array( 'mailto:admin@example.com', true ) );
+check( 'vapid: k is the public key', $m[2], $vapid['public'] );
+check(
+	'vapid: ES256 signature verifies',
+	openssl_verify( "$jh.$jc", raw_to_der( WebPush::b64url_decode( $js ) ), WebPush::pem_public( WebPush::b64url_decode( $vapid['public'] ) ), OPENSSL_ALGO_SHA256 ),
+	1
+);
+check( 'push: headers', array( $req['headers']['Content-Encoding'], $req['headers']['TTL'] ), array( 'aes128gcm', '86400' ) );
+check( 'b64url round trip', WebPush::b64url_decode( WebPush::b64url( "\xff\xfe\x00abc" ) ), "\xff\xfe\x00abc" );
 
 // ---------------------------------------------------------------- countries.json
 $countries = json_decode( file_get_contents( __DIR__ . '/../data/countries.json' ), true );

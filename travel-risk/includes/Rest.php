@@ -8,8 +8,12 @@
  *   PUT    /me                      Save countries and/or language
  *   DELETE /me                      Delete own account and data
  *   POST   /login                   Request a sign-in link by e-mail
- *   POST   /login/verify            Exchange the link token for a session
+ *   POST   /login/verify            Exchange the link token or the 6-digit code for a session
  *   POST   /logout
+ *   GET    /push/key                VAPID public key for PushManager.subscribe()
+ *   POST   /push                    Register this device for push notifications
+ *   DELETE /push                    Remove this device
+ *   POST   /push/test               Send a test notification to the user's devices
  *
  * Error responses carry a short code (e.g. "rate_limited") that the app translates.
  */
@@ -54,7 +58,8 @@ class Rest {
 				'permission_callback' => 'is_user_logged_in',
 				'args'                => array(
 					'countries' => array( 'type' => 'array', 'items' => array( 'type' => 'string' ) ),
-					'lang'      => array( 'type' => 'string', 'enum' => LANGUAGES ),
+					'lang'        => array( 'type' => 'string', 'enum' => LANGUAGES ),
+					'notifyEmail' => array( 'type' => 'boolean' ),
 				),
 			),
 			array(
@@ -78,7 +83,34 @@ class Rest {
 			'methods'             => 'POST',
 			'callback'            => array( self::class, 'verify' ),
 			'permission_callback' => '__return_true',
-			'args'                => array( 'token' => array( 'type' => 'string', 'required' => true ) ),
+			'args'                => array(
+				'token' => array( 'type' => 'string' ),
+				'email' => array( 'type' => 'string' ),
+				'code'  => array( 'type' => 'string' ),
+			),
+		) );
+		register_rest_route( self::NS, '/push/key', array(
+			'methods'             => 'GET',
+			'callback'            => fn() => array( 'publicKey' => Notify::vapid()['public'] ),
+			'permission_callback' => 'is_user_logged_in',
+		) );
+		register_rest_route( self::NS, '/push', array(
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( self::class, 'push_add' ),
+				'permission_callback' => 'is_user_logged_in',
+			),
+			array(
+				'methods'             => 'DELETE',
+				'callback'            => array( self::class, 'push_remove' ),
+				'permission_callback' => 'is_user_logged_in',
+				'args'                => array( 'endpoint' => array( 'type' => 'string', 'required' => true ) ),
+			),
+		) );
+		register_rest_route( self::NS, '/push/test', array(
+			'methods'             => 'POST',
+			'callback'            => array( self::class, 'push_test' ),
+			'permission_callback' => 'is_user_logged_in',
 		) );
 		register_rest_route( self::NS, '/logout', array(
 			'methods'             => 'POST',
@@ -166,9 +198,11 @@ class Rest {
 			'loggedIn'             => true,
 			'registrationRequired' => (bool) setting( 'require_registration' ),
 			'email'                => $user->user_email,
-			'countries'            => array_values( (array) get_user_meta( $user->ID, Auth::META_COUNTRIES, true ) ),
+			'countries'            => user_list( $user->ID, Auth::META_COUNTRIES ),
 			'lang'                 => get_user_meta( $user->ID, Auth::META_LANG, true ) ?: null,
 			'canDelete'            => ! current_user_can( 'edit_posts' ),
+			'notifyEmail'          => '1' === get_user_meta( $user->ID, Notify::META_EMAIL, true ),
+			'pushDevices'          => count( Notify::devices( $user->ID ) ),
 		);
 	}
 
@@ -183,6 +217,9 @@ class Rest {
 		}
 		if ( null !== $req['lang'] ) {
 			update_user_meta( $id, Auth::META_LANG, language( $req['lang'] ) );
+		}
+		if ( null !== $req['notifyEmail'] ) {
+			$req['notifyEmail'] ? update_user_meta( $id, Notify::META_EMAIL, '1' ) : delete_user_meta( $id, Notify::META_EMAIL );
 		}
 		return self::me();
 	}
@@ -218,8 +255,34 @@ class Rest {
 		if ( ! $req->is_json_content_type() ) {
 			return new \WP_Error( 'invalid_token', 'invalid_token', array( 'status' => 400 ) );
 		}
-		$result = Auth::verify( (string) $req['token'] );
+		$result = $req['token']
+			? Auth::verify( (string) $req['token'] )
+			: Auth::verify_code( (string) $req['email'], (string) $req['code'] );
 		return is_wp_error( $result ) ? $result : array( 'loggedIn' => true );
+	}
+
+	public static function push_add( \WP_REST_Request $req ) {
+		$sub = Notify::validate( $req->get_json_params() );
+		if ( is_wp_error( $sub ) ) {
+			return $sub;
+		}
+		Notify::add_device( get_current_user_id(), $sub );
+		return self::me();
+	}
+
+	public static function push_remove( \WP_REST_Request $req ) {
+		Notify::remove_device( get_current_user_id(), (string) $req['endpoint'] );
+		return self::me();
+	}
+
+	public static function push_test() {
+		$lang = language( get_user_meta( get_current_user_id(), Auth::META_LANG, true ) );
+		$text = array(
+			'en' => array( 'Notifications are working', 'You will get a message here when the travel advice for one of your countries changes.' ),
+			'de' => array( 'Benachrichtigungen funktionieren', 'Sie erhalten hier eine Nachricht, wenn sich der Reisehinweis für eines Ihrer Länder ändert.' ),
+			'nl' => array( 'Meldingen werken', 'Je krijgt hier een bericht als het reisadvies voor een van je landen wijzigt.' ),
+		)[ $lang ];
+		return Notify::push_user( get_current_user_id(), array( 'title' => $text[0], 'body' => $text[1], 'tag' => 'test' ) );
 	}
 
 	public static function logout() {

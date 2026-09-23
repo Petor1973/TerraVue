@@ -24,6 +24,20 @@
       fullAdvice: 'Full travel advice', newsTitle: 'News, last {h} hours', newsLoading: 'Looking for news…',
       newsNone: 'No reports about security incidents found.', loading: 'Loading travel advice…',
       newsCount: '{n} news', parts: 'Parts: {level}', expandAll: 'Expand all', collapseAll: 'Collapse all',
+      menu: 'Menu', tabCountries: 'Countries', tabAlerts: 'Notifications',
+      codeLabel: 'Using the installed app? Enter the 6-digit code from the e-mail', codeButton: 'Sign in',
+      alertsTitle: 'Notifications',
+      alertsLead: 'Get a message when the travel advice for one of your countries changes. The official advice is checked every hour.',
+      pushTitle: 'Push notifications on this device', pushOn: 'On for this device.', pushOff: 'Off for this device.',
+      pushTest: 'Send test notification', pushTestSent: 'Test sent to {n} device(s).',
+      pushDenied: 'Notifications are blocked for this site. Allow them in your browser or phone settings and try again.',
+      pushUnsupported: 'This browser does not support push notifications. You can use e-mail notifications instead.',
+      pushIos: 'iPhone and iPad: first add this app to your home screen (Share → Add to Home Screen), open it from there and turn notifications on in the app.',
+      pushConsent: 'Turning this on stores the push address of this device with your account. Turn it off at any time.',
+      pushFailed: 'Could not turn on notifications on this device. Please try again later.',
+      emailTitle: 'E-mail notifications', emailText: 'Also send an e-mail to {email} when the advice changes.',
+      follows: 'Notifications cover the {n} countries you follow, with advice from {source}.',
+      followsNone: 'You do not follow any countries yet. Add them under Countries.',
       updatedAt: 'Updated at {time}.', offline: 'You are offline. Showing the last saved information.',
       account: 'Account', signOut: 'Sign out', deleteAccount: 'Delete account',
       deleteConfirm: 'Delete your account and all saved data? This cannot be undone.',
@@ -46,6 +60,7 @@
         expired_token: 'This sign-in link has expired or was already used. Request a new one.',
         invalid_token: 'This sign-in link is not valid. Request a new one.',
         rest_forbidden: 'Please sign in first.',
+        invalid_code: 'This code is not correct.', invalid_subscription: 'This device could not be registered.',
         offline: 'No connection.',
         default: 'Source not reachable. Try again later.',
       },
@@ -66,6 +81,20 @@
       fullAdvice: 'Vollständige Reise- und Sicherheitshinweise', newsTitle: 'Nachrichten, letzte {h} Stunden',
       newsLoading: 'Suche nach Nachrichten…', newsNone: 'Keine Meldungen über Sicherheitsvorfälle gefunden.',
       newsCount: '{n} Meldungen', parts: 'Teilweise: {level}', expandAll: 'Alle aufklappen', collapseAll: 'Alle zuklappen',
+      menu: 'Menü', tabCountries: 'Länder', tabAlerts: 'Benachrichtigungen',
+      codeLabel: 'Sie nutzen die installierte App? Geben Sie den 6-stelligen Code aus der E-Mail ein', codeButton: 'Anmelden',
+      alertsTitle: 'Benachrichtigungen',
+      alertsLead: 'Erhalten Sie eine Nachricht, wenn sich der Reisehinweis für eines Ihrer Länder ändert. Die offiziellen Hinweise werden stündlich geprüft.',
+      pushTitle: 'Push-Benachrichtigungen auf diesem Gerät', pushOn: 'Auf diesem Gerät aktiv.', pushOff: 'Auf diesem Gerät aus.',
+      pushTest: 'Testbenachrichtigung senden', pushTestSent: 'Test an {n} Gerät(e) gesendet.',
+      pushDenied: 'Benachrichtigungen sind für diese Website blockiert. Erlauben Sie sie in den Browser- oder Telefoneinstellungen und versuchen Sie es erneut.',
+      pushUnsupported: 'Dieser Browser unterstützt keine Push-Benachrichtigungen. Nutzen Sie stattdessen E-Mail-Benachrichtigungen.',
+      pushIos: 'iPhone und iPad: Fügen Sie die App zuerst zum Home-Bildschirm hinzu (Teilen → Zum Home-Bildschirm), öffnen Sie sie dort und aktivieren Sie die Benachrichtigungen in der App.',
+      pushConsent: 'Beim Aktivieren wird die Push-Adresse dieses Geräts in Ihrem Konto gespeichert. Sie können das jederzeit abschalten.',
+      pushFailed: 'Benachrichtigungen konnten auf diesem Gerät nicht aktiviert werden. Bitte später erneut versuchen.',
+      emailTitle: 'E-Mail-Benachrichtigungen', emailText: 'Zusätzlich eine E-Mail an {email} senden, wenn sich der Hinweis ändert.',
+      follows: 'Benachrichtigungen gelten für die {n} Länder, denen Sie folgen, mit Hinweisen von {source}.',
+      followsNone: 'Sie folgen noch keinen Ländern. Fügen Sie sie unter Länder hinzu.',
       loading: 'Reisehinweise werden geladen…', updatedAt: 'Aktualisiert um {time}.',
       offline: 'Sie sind offline. Es werden die zuletzt gespeicherten Daten angezeigt.',
       account: 'Konto', signOut: 'Abmelden', deleteAccount: 'Konto löschen',
@@ -89,6 +118,7 @@
         expired_token: 'Dieser Anmeldelink ist abgelaufen oder wurde bereits verwendet. Fordern Sie einen neuen an.',
         invalid_token: 'Dieser Anmeldelink ist ungültig. Fordern Sie einen neuen an.',
         rest_forbidden: 'Bitte melden Sie sich zuerst an.',
+        invalid_code: 'Dieser Code ist nicht korrekt.', invalid_subscription: 'Dieses Gerät konnte nicht registriert werden.',
         offline: 'Keine Verbindung.',
         default: 'Quelle nicht erreichbar. Bitte später erneut versuchen.',
       },
@@ -109,6 +139,20 @@
       fullAdvice: 'Volledig reisadvies', newsTitle: 'Nieuws, afgelopen {h} uur', newsLoading: 'Nieuws zoeken…',
       newsNone: 'Geen berichten over veiligheidsincidenten gevonden.', loading: 'Reisadvies ophalen…',
       newsCount: '{n} berichten', parts: 'Deels: {level}', expandAll: 'Alles uitklappen', collapseAll: 'Alles inklappen',
+      menu: 'Menu', tabCountries: 'Landen', tabAlerts: 'Meldingen',
+      codeLabel: 'Gebruik je de geïnstalleerde app? Vul de 6-cijferige code uit de e-mail in', codeButton: 'Inloggen',
+      alertsTitle: 'Meldingen',
+      alertsLead: 'Krijg een bericht als het reisadvies voor een van je landen wijzigt. Het officiële advies wordt elk uur gecontroleerd.',
+      pushTitle: 'Pushmeldingen op dit apparaat', pushOn: 'Aan op dit apparaat.', pushOff: 'Uit op dit apparaat.',
+      pushTest: 'Testmelding sturen', pushTestSent: 'Test verstuurd naar {n} apparaat/apparaten.',
+      pushDenied: 'Meldingen zijn geblokkeerd voor deze site. Sta ze toe in de instellingen van je browser of telefoon en probeer het opnieuw.',
+      pushUnsupported: 'Deze browser ondersteunt geen pushmeldingen. Gebruik in plaats daarvan e-mailmeldingen.',
+      pushIos: 'iPhone en iPad: zet de app eerst op je beginscherm (Deel → Zet op beginscherm), open hem daarvandaan en zet de meldingen in de app aan.',
+      pushConsent: 'Als je dit aanzet, bewaren we het pushadres van dit apparaat bij je account. Je kunt het altijd weer uitzetten.',
+      pushFailed: 'Meldingen konden niet worden aangezet op dit apparaat. Probeer het later opnieuw.',
+      emailTitle: 'E-mailmeldingen', emailText: 'Stuur ook een e-mail naar {email} als het advies wijzigt.',
+      follows: 'Meldingen gelden voor de {n} landen die je volgt, met advies van {source}.',
+      followsNone: 'Je volgt nog geen landen. Voeg ze toe onder Landen.',
       updatedAt: 'Bijgewerkt om {time}.', offline: 'Je bent offline. De laatst bewaarde gegevens worden getoond.',
       account: 'Account', signOut: 'Uitloggen', deleteAccount: 'Account verwijderen',
       deleteConfirm: 'Je account en alle bewaarde gegevens verwijderen? Dit kan niet ongedaan worden gemaakt.',
@@ -131,6 +175,7 @@
         expired_token: 'Deze inloglink is verlopen of al gebruikt. Vraag een nieuwe aan.',
         invalid_token: 'Deze inloglink is niet geldig. Vraag een nieuwe aan.',
         rest_forbidden: 'Log eerst in.',
+        invalid_code: 'Deze code klopt niet.', invalid_subscription: 'Dit apparaat kon niet worden aangemeld.',
         offline: 'Geen verbinding.',
         default: 'Bron niet bereikbaar. Probeer het later opnieuw.',
       },
@@ -157,6 +202,9 @@
     me: { loggedIn: false, registrationRequired: false },
     view: 'loading',        // loading | auth | sent | app
     open: new Set(),        // countries shown with full details
+    tab: 'countries',       // countries | alerts
+    push: 'unknown',        // unknown | unsupported | denied | off | on | busy
+    notice: '', code: '',
     email: '', consent: false, sentTo: '', authError: '', menuOpen: false, installPrompt: null, updatedAt: null,
   };
 
@@ -286,6 +334,7 @@
   }
 
   async function signOut() {
+    await removeThisDevice();
     await api('POST', 'logout').catch(() => {});
     clearLocal();
     location.reload();
@@ -294,6 +343,7 @@
   async function deleteAccount() {
     if (!confirm(t('deleteConfirm'))) return;
     try {
+      await removeThisDevice();
       await api('DELETE', 'me');
       clearLocal();
       location.reload();
@@ -316,6 +366,22 @@
     if (Math.abs(min) < 60) return rtf.format(Math.min(min, -1), 'minute');
     if (Math.abs(min) < 48 * 60) return rtf.format(Math.round(min / 60), 'hour');
     return rtf.format(Math.round(min / 1440), 'day');
+  }
+
+  const ICONS = {
+    countries: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>',
+    alerts: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+  };
+  const hasTabs = () => state.view === 'app' && state.me.loggedIn;
+
+  // Same navigation twice: in the top bar on wide screens, as a bottom tab bar on phones and in the app.
+  function tabs(where) {
+    return h('nav', { class: 'tr-tabs tr-tabs-' + where, 'aria-label': t('menu') },
+      ['countries', 'alerts'].map(id => h('button', {
+        type: 'button', 'aria-current': state.tab === id ? 'page' : null,
+        onclick: () => { state.tab = id; state.menuOpen = false; state.notice = ''; render(); window.scrollTo(0, 0); },
+      }, h('span', { class: 'tr-ico', 'aria-hidden': 'true', innerHTML: ICONS[id] }),
+        h('span', {}, t(id === 'countries' ? 'tabCountries' : 'tabAlerts')))));
   }
 
   function topBar() {
@@ -341,6 +407,7 @@
         h('span', { class: 'tr-mark', 'aria-hidden': 'true' }),
         h('span', { class: 'tr-name' }, cfg.brand)),
       h('div', { class: 'tr-actions' },
+        hasTabs() && tabs('top'),
         state.installPrompt && h('button', { type: 'button', class: 'tr-ghost tr-install', onclick: install }, t('install')),
         langs, account));
   }
@@ -350,7 +417,15 @@
       return h('section', { class: 'tr-auth' },
         h('h1', {}, t('sentTitle')),
         h('p', {}, t('sentText', { email: state.sentTo })),
-        h('button', { type: 'button', class: 'tr-ghost', onclick: () => { state.view = 'auth'; render(); } }, t('otherEmail')));
+        h('form', { class: 'tr-auth-form', novalidate: true, onsubmit: verifyCode },
+          h('label', { for: 'tr-code' }, t('codeLabel')),
+          h('input', {
+            id: 'tr-code', name: 'code', type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code',
+            maxlength: '6', class: 'tr-code', value: state.code, oninput: e => { state.code = e.target.value; },
+          }),
+          state.authError && h('p', { class: 'tr-error', role: 'alert' }, state.authError),
+          h('button', { type: 'submit', class: 'tr-primary' }, t('codeButton'))),
+        h('button', { type: 'button', class: 'tr-ghost', onclick: () => { state.view = 'auth'; state.authError = ''; render(); } }, t('otherEmail')));
     }
     const form = h('form', { class: 'tr-auth-form', novalidate: true, onsubmit: requestLink },
       h('label', { for: 'tr-email' }, t('email')),
@@ -388,6 +463,120 @@
       state.authError = errText(err.message);
     }
     render();
+  }
+
+  async function verifyCode(e) {
+    e.preventDefault();
+    const code = state.code.replace(/\D/g, '');
+    if (code.length !== 6) { state.authError = errText('invalid_code'); return render(); }
+    try {
+      await api('POST', 'login/verify', { email: state.sentTo, code });
+      location.reload(); // fresh page = fresh session nonce
+    } catch (err) {
+      state.authError = errText(err.message);
+      if (err.message === 'expired_token') state.code = '';
+      render();
+    }
+  }
+
+  // ---------------------------------------------------------------- notifications
+  const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const within = (promise, ms) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
+  const currentSubscription = () => within(navigator.serviceWorker.ready, 4000).then(reg => reg.pushManager.getSubscription());
+  const keyBytes = b64 => Uint8Array.from(atob(b64.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - b64.length % 4) % 4)), c => c.charCodeAt(0));
+
+  async function detectPush() {
+    if (!pushSupported()) state.push = 'unsupported';
+    else if (Notification.permission === 'denied') state.push = 'denied';
+    else state.push = await currentSubscription().then(sub => (sub ? 'on' : 'off'), () => 'off');
+    render();
+  }
+
+  async function enablePush() {
+    state.push = 'busy'; state.notice = ''; render();
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') { state.push = permission === 'denied' ? 'denied' : 'off'; return render(); }
+      const { publicKey } = await api('GET', 'push/key');
+      const reg = await within(navigator.serviceWorker.ready, 4000);
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });
+      state.me = await api('POST', 'push', sub.toJSON());
+      state.push = 'on';
+    } catch (e) {
+      // Browser errors (push service unreachable, aborted) have no server code.
+      state.push = 'off';
+      state.notice = T.en.err[e.message] ? errText(e.message) : t('pushFailed');
+    }
+    render();
+  }
+
+  async function disablePush() {
+    state.push = 'busy'; state.notice = ''; render();
+    await removeThisDevice();
+    state.me = await api('GET', 'me').catch(() => state.me);
+    state.push = 'off';
+    render();
+  }
+
+  // Also used on sign-out, so a shared device stops receiving someone else's alerts.
+  async function removeThisDevice() {
+    try {
+      const sub = pushSupported() && await currentSubscription();
+      if (!sub) return;
+      await api('DELETE', 'push', { endpoint: sub.endpoint }).catch(() => {});
+      await sub.unsubscribe();
+    } catch { /* nothing registered on this device */ }
+  }
+
+  async function testPush() {
+    state.notice = '';
+    try {
+      const r = await api('POST', 'push/test');
+      state.notice = t('pushTestSent', { n: r.sent });
+    } catch (e) {
+      state.notice = errText(e.message);
+    }
+    render();
+  }
+
+  async function setEmailAlerts(on) {
+    try {
+      state.me = await api('PUT', 'me', { notifyEmail: on });
+    } catch (e) {
+      state.notice = errText(e.message);
+    }
+    render();
+  }
+
+  function switchControl(label, checked, onchange, disabled) {
+    return h('button', {
+      type: 'button', role: 'switch', class: 'tr-switch', 'aria-checked': String(checked), 'aria-label': label,
+      disabled, onclick: () => onchange(!checked),
+    }, h('span', { 'aria-hidden': 'true' }));
+  }
+
+  function alertsView() {
+    const p = state.push;
+    const pushText = p === 'unsupported' ? (isIos() ? t('pushIos') : t('pushUnsupported'))
+      : p === 'denied' ? t('pushDenied') : p === 'on' ? t('pushOn') : p === 'off' ? t('pushOff') : '…';
+    const n = state.selected.length;
+    return h('div', { class: 'tr-app' },
+      h('section', { class: 'tr-hero' },
+        h('h1', {}, t('alertsTitle')),
+        h('p', { class: 'tr-lead' }, t('alertsLead'))),
+      h('section', { class: 'tr-panel' },
+        h('div', { class: 'tr-setting' },
+          h('div', {}, h('h2', {}, t('pushTitle')), h('p', { class: 'tr-muted' }, pushText)),
+          ['on', 'off', 'busy'].includes(p) && switchControl(t('pushTitle'), p === 'on', on => (on ? enablePush() : disablePush()), p === 'busy')),
+        p === 'off' && h('p', { class: 'tr-muted tr-small-print' }, t('pushConsent')),
+        p === 'on' && h('button', { type: 'button', class: 'tr-ghost tr-small', onclick: testPush }, t('pushTest'))),
+      h('section', { class: 'tr-panel' },
+        h('div', { class: 'tr-setting' },
+          h('div', {}, h('h2', {}, t('emailTitle')), h('p', { class: 'tr-muted' }, t('emailText', { email: state.me.email }))),
+          switchControl(t('emailTitle'), !!state.me.notifyEmail, setEmailAlerts))),
+      state.notice && h('p', { class: 'tr-notice', role: 'status' }, state.notice),
+      h('p', { class: 'tr-muted tr-follows' }, n ? t('follows', { n, source: SOURCE[state.lang] }) : t('followsNone')));
   }
 
   // --- country picker (combobox)
@@ -546,11 +735,14 @@
     root.lang = state.lang;
     root.removeAttribute('data-loading');
     const main = state.view === 'loading' ? h('p', { class: 'tr-muted' }, t('signingIn'))
-      : state.view === 'app' ? appView() : authView();
+      : state.view !== 'app' ? authView()
+      : state.tab === 'alerts' && state.me.loggedIn ? alertsView() : appView();
+    root.classList.toggle('has-tabs', hasTabs());
     root.replaceChildren(...[
       topBar(),
       !navigator.onLine && h('p', { class: 'tr-offline', role: 'status' }, t('offline')),
       main,
+      hasTabs() && tabs('bottom'),
     ].filter(Boolean));
     const search = document.getElementById('tr-search');
     if (focusId) document.getElementById(focusId)?.focus();
@@ -621,6 +813,7 @@
     render();
 
     if (state.view === 'app') {
+      if (state.me.loggedIn) detectPush();
       refreshAll();
       setInterval(refreshAll, 60 * 60 * 1000);
     }

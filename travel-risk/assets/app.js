@@ -43,6 +43,7 @@
       alertsLead: 'Get a message when the travel advice for one of your countries changes. The official advice is checked every hour.',
       pushTitle: 'Push notifications on this device', pushOn: 'On for this device.', pushOff: 'Off for this device.',
       pushTest: 'Send test notification', pushTestSent: 'Test sent to {n} device(s).',
+      pushAccount: 'Push is on for {n} device(s) of {email}. A test goes to all of them; devices signed in with another account do not receive it.',
       pushDenied: 'Notifications are blocked for this site. Allow them in your browser or phone settings and try again.',
       pushUnsupported: 'This browser does not support push notifications. You can use e-mail notifications instead.',
       pushIos: 'iPhone and iPad: first add this app to your home screen (Share → Add to Home Screen), open it from there and turn notifications on in the app.',
@@ -113,6 +114,7 @@
       alertsLead: 'Erhalten Sie eine Nachricht, wenn sich der Reisehinweis für eines Ihrer Länder ändert. Die offiziellen Hinweise werden stündlich geprüft.',
       pushTitle: 'Push-Benachrichtigungen auf diesem Gerät', pushOn: 'Auf diesem Gerät aktiv.', pushOff: 'Auf diesem Gerät aus.',
       pushTest: 'Testbenachrichtigung senden', pushTestSent: 'Test an {n} Gerät(e) gesendet.',
+      pushAccount: 'Push ist für {n} Gerät(e) von {email} aktiv. Ein Test geht an alle; Geräte mit einem anderen Konto erhalten ihn nicht.',
       pushDenied: 'Benachrichtigungen sind für diese Website blockiert. Erlauben Sie sie in den Browser- oder Telefoneinstellungen und versuchen Sie es erneut.',
       pushUnsupported: 'Dieser Browser unterstützt keine Push-Benachrichtigungen. Nutzen Sie stattdessen E-Mail-Benachrichtigungen.',
       pushIos: 'iPhone und iPad: Fügen Sie die App zuerst zum Home-Bildschirm hinzu (Teilen → Zum Home-Bildschirm), öffnen Sie sie dort und aktivieren Sie die Benachrichtigungen in der App.',
@@ -184,6 +186,7 @@
       alertsLead: 'Krijg een bericht als het reisadvies voor een van je landen wijzigt. Het officiële advies wordt elk uur gecontroleerd.',
       pushTitle: 'Pushmeldingen op dit apparaat', pushOn: 'Aan op dit apparaat.', pushOff: 'Uit op dit apparaat.',
       pushTest: 'Testmelding sturen', pushTestSent: 'Test verstuurd naar {n} apparaat/apparaten.',
+      pushAccount: 'Push staat aan voor {n} apparaat/apparaten van {email}. Een test gaat naar al die apparaten; apparaten met een ander account krijgen hem niet.',
       pushDenied: 'Meldingen zijn geblokkeerd voor deze site. Sta ze toe in de instellingen van je browser of telefoon en probeer het opnieuw.',
       pushUnsupported: 'Deze browser ondersteunt geen pushmeldingen. Gebruik in plaats daarvan e-mailmeldingen.',
       pushIos: 'iPhone en iPad: zet de app eerst op je beginscherm (Deel → Zet op beginscherm), open hem daarvandaan en zet de meldingen in de app aan.',
@@ -617,6 +620,7 @@
     try {
       const r = await api('POST', 'push/test');
       state.notice = t('pushTestSent', { n: r.sent });
+      state.me = await api('GET', 'me').catch(() => state.me); // devices gone at the push service are removed
     } catch (e) {
       state.notice = errText(e.message);
     }
@@ -654,6 +658,7 @@
           ['on', 'off', 'busy'].includes(p) && switchControl(t('pushTitle'), p === 'on', on => (on ? enablePush() : disablePush()), p === 'busy')),
         p === 'unsupported' && canGuide() && h('button', { type: 'button', class: 'tr-ghost tr-small', onclick: openGuide }, t('howTo')),
         p === 'off' && h('p', { class: 'tr-muted tr-small-print' }, t('pushConsent')),
+        state.me.pushDevices > 0 && h('p', { class: 'tr-muted tr-small-print' }, t('pushAccount', { n: state.me.pushDevices, email: state.me.email })),
         p === 'on' && h('button', { type: 'button', class: 'tr-ghost tr-small', onclick: testPush }, t('pushTest'))),
       h('section', { class: 'tr-panel' },
         h('div', { class: 'tr-setting' },

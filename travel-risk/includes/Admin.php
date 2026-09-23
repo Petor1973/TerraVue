@@ -47,13 +47,18 @@ class Admin {
 		self::guard( 'travel_risk_test_change' );
 		$iso     = strtoupper( sanitize_key( wp_unslash( $_POST['country'] ?? '' ) ) );
 		$country = countries()[ $iso ] ?? null;
+		$to      = sanitize_email( wp_unslash( $_POST['to'] ?? '' ) );
+		$user    = $to ? get_user_by( 'email', $to ) : wp_get_current_user();
 		if ( ! $country ) {
 			self::back( 'Unknown country.' );
 		}
-		$r = Notify::simulate( get_current_user_id(), $country );
+		if ( ! $user || ! $user->ID ) {
+			self::back( 'No account with that e-mail address.' );
+		}
+		$r = Notify::simulate( $user->ID, $country );
 		self::back( sprintf(
-			'Test notification for %s: push sent to %d device(s), %d failed; e-mail %s.',
-			$country['en'], $r['push']['sent'], $r['push']['failed'], $r['email'] ? 'sent' : 'not sent (e-mail notifications are off for your account)'
+			'Test notification for %s to %s: push sent to %d device(s), %d failed; e-mail %s.',
+			$country['en'], $user->user_email, $r['push']['sent'], $r['push']['failed'], $r['email'] ? 'sent' : 'not sent (e-mail notifications are off for that account)'
 		) );
 	}
 
@@ -71,8 +76,9 @@ class Admin {
 		<h2 id="tr-tests">Test notifications</h2>
 		<ol>
 			<li>Open <a href="<?php echo esc_url( app_url() ); ?>" target="_blank" rel="noopener">the app</a> while logged in here, go to <strong>Notifications</strong> and turn on push (and/or e-mail) for this device.</li>
-			<li>Use the buttons below. A test notification goes to <strong>your account only</strong> and does not affect other users or the baseline.</li>
+			<li>Use the buttons below. A test notification goes to <strong>one account</strong> (yours, or the address you enter) and to all devices with push on for that account. It does not affect other users or the baseline.</li>
 		</ol>
+		<p class="description">Push is stored per account: a phone signed in with another e-mail address than this admin account does not receive tests sent to you. Enter that address below to reach it.</p>
 		<p>Your account: <strong><?php echo (int) $devices; ?></strong> device(s) with push, e-mail notifications <strong><?php echo $email ? 'on' : 'off'; ?></strong>.</p>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-bottom:12px">
 			<input type="hidden" name="action" value="travel_risk_test_change">
@@ -84,7 +90,8 @@ class Admin {
 					<?php endforeach; ?>
 				</select>
 			</label>
-			<?php submit_button( 'Send test "advice changed" notification to me', 'secondary', 'submit', false ); ?>
+			<label>To <input type="email" name="to" placeholder="<?php echo esc_attr( wp_get_current_user()->user_email ); ?>" class="regular-text"></label>
+			<?php submit_button( 'Send test "advice changed" notification', 'secondary', 'submit', false ); ?>
 		</form>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="travel_risk_check_now">

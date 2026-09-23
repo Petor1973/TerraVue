@@ -25,6 +25,10 @@
       newsNone: 'No reports about security incidents found.', loading: 'Loading travel advice…',
       newsCount: '{n} news', parts: 'Parts: {level}', expandAll: 'Expand all', collapseAll: 'Collapse all',
       menu: 'Menu', tabCountries: 'Countries', tabAlerts: 'Notifications',
+      adviceFrom: 'Advice from',
+      adviceHint: 'Choose the government whose advice you follow, usually that of your nationality or your employer. It applies to all countries and to notifications.',
+      otherSources: 'Other governments', inLanguage: 'Summary in {lang}.', followSource: 'Follow the advice of {source} (for all countries)',
+      sourceLang: { buza: 'Dutch', fcdo: 'English', aa: 'German' },
       installMenu: 'Install as app', installTitle: 'Install {brand} as an app',
       installLead: 'Put {brand} on your home screen: it opens full screen like an app, works offline and can send you notifications.',
       iosSteps: ['Tap the Share button {share} in the toolbar (bottom on iPhone, top on iPad).', 'Scroll down and tap “Add to Home Screen” {add}.', 'Tap “Add”, then open {brand} from your home screen.'],
@@ -89,6 +93,10 @@
       newsLoading: 'Suche nach Nachrichten…', newsNone: 'Keine Meldungen über Sicherheitsvorfälle gefunden.',
       newsCount: '{n} Meldungen', parts: 'Teilweise: {level}', expandAll: 'Alle aufklappen', collapseAll: 'Alle zuklappen',
       menu: 'Menü', tabCountries: 'Länder', tabAlerts: 'Benachrichtigungen',
+      adviceFrom: 'Hinweise von',
+      adviceHint: 'Wählen Sie die Regierung, deren Hinweisen Sie folgen, meist die Ihrer Staatsangehörigkeit oder Ihres Arbeitgebers. Gilt für alle Länder und Benachrichtigungen.',
+      otherSources: 'Andere Regierungen', inLanguage: 'Zusammenfassung auf {lang}.', followSource: 'Hinweisen von {source} folgen (für alle Länder)',
+      sourceLang: { buza: 'Niederländisch', fcdo: 'Englisch', aa: 'Deutsch' },
       installMenu: 'Als App installieren', installTitle: '{brand} als App installieren',
       installLead: 'Legen Sie {brand} auf Ihren Home-Bildschirm: Die App öffnet im Vollbild, funktioniert offline und kann Ihnen Benachrichtigungen senden.',
       iosSteps: ['Tippen Sie auf die Teilen-Taste {share} in der Symbolleiste (unten auf dem iPhone, oben auf dem iPad).', 'Scrollen Sie nach unten und tippen Sie auf „Zum Home-Bildschirm“ {add}.', 'Tippen Sie auf „Hinzufügen“ und öffnen Sie {brand} dann vom Home-Bildschirm.'],
@@ -154,6 +162,10 @@
       newsNone: 'Geen berichten over veiligheidsincidenten gevonden.', loading: 'Reisadvies ophalen…',
       newsCount: '{n} berichten', parts: 'Deels: {level}', expandAll: 'Alles uitklappen', collapseAll: 'Alles inklappen',
       menu: 'Menu', tabCountries: 'Landen', tabAlerts: 'Meldingen',
+      adviceFrom: 'Advies van',
+      adviceHint: 'Kies de overheid waarvan je het advies volgt, meestal die van je nationaliteit of werkgever. Geldt voor alle landen en voor meldingen.',
+      otherSources: 'Andere overheden', inLanguage: 'Samenvatting in het {lang}.', followSource: 'Advies van {source} volgen (voor alle landen)',
+      sourceLang: { buza: 'Nederlands', fcdo: 'Engels', aa: 'Duits' },
       installMenu: 'Installeren als app', installTitle: '{brand} als app installeren',
       installLead: 'Zet {brand} op je beginscherm: de app opent schermvullend, werkt offline en kan je meldingen sturen.',
       iosSteps: ['Tik op de deelknop {share} in de werkbalk (onderaan op iPhone, bovenaan op iPad).', 'Scroll omlaag en tik op ‘Zet op beginscherm’ {add}.', 'Tik op ‘Voeg toe’ en open {brand} daarna vanaf je beginscherm.'],
@@ -203,11 +215,25 @@
     },
   };
   const LOCALE = { en: 'en-GB', de: 'de-DE', nl: 'nl-NL' };
-  const SOURCE = { en: 'FCDO (UK)', de: 'Auswärtiges Amt', nl: 'Ministerie van Buitenlandse Zaken' };
+  const SOURCES = ['buza', 'fcdo', 'aa'];
+  const SOURCE = { buza: 'Ministerie van Buitenlandse Zaken (NL)', fcdo: 'FCDO (UK)', aa: 'Auswärtiges Amt (DE)' };
+  const SOURCE_SHORT = { buza: 'NL', fcdo: 'UK', aa: 'DE' };
+
+  // Default advice source from the browser's language/region settings; no location is used.
+  function defaultSource() {
+    for (const tag of navigator.languages || [navigator.language || '']) {
+      const [lang, region] = tag.split('-').map(x => (x || '').toUpperCase());
+      if (region === 'NL' || (lang === 'NL' && !region)) return 'buza';
+      if (['DE', 'AT', 'CH', 'LI', 'LU'].includes(region) && lang === 'DE') return 'aa';
+      if (lang === 'DE' && !region) return 'aa';
+      if (region === 'GB' || region === 'UK') return 'fcdo';
+    }
+    return 'fcdo';
+  }
   const NEWS = { gdelt: 'GDELT', google: 'Google News' };
 
   // ---------------------------------------------------------------- state
-  const KEY = { lang: 'travel-risk.lang', countries: 'travel-risk.countries', guide: 'travel-risk.install-guide' };
+  const KEY = { lang: 'travel-risk.lang', countries: 'travel-risk.countries', guide: 'travel-risk.install-guide', source: 'travel-risk.source' };
   const store = {
     get(k, fallback) { try { const v = localStorage.getItem(k); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
@@ -216,6 +242,8 @@
 
   const state = {
     lang: cfg.languages.includes(store.get(KEY.lang)) ? store.get(KEY.lang) : cfg.languages[0],
+    source: null,           // buza | fcdo | aa, set in start()
+    others: {},             // iso -> { source -> advice | {error} } for the comparison
     countries: [],          // [{iso3, en, de, nl, ...}]
     selected: store.get(KEY.countries, []),
     advice: {},             // iso -> {loading} | data | {error}
@@ -294,7 +322,7 @@
     state.advice[iso] = { loading: true };
     render();
     try {
-      state.advice[iso] = await api('GET', 'advice/' + iso, null, { lang: state.lang });
+      state.advice[iso] = await api('GET', 'advice/' + iso, null, { source: state.source });
     } catch (e) {
       state.advice[iso] = { error: e.message };
     }
@@ -346,8 +374,31 @@
     state.lang = lang;
     store.set(KEY.lang, lang);
     if (state.me.loggedIn) api('PUT', 'me', { lang }).catch(() => {});
-    state.selected.forEach(loadAdvice); // advice source depends on language
     render();
+  }
+
+  function setSource(source) {
+    state.source = source;
+    state.others = {};
+    store.set(KEY.source, source);
+    if (state.me.loggedIn) api('PUT', 'me', { source }).catch(() => {});
+    state.selected.forEach(loadAdvice);
+    state.selected.filter(iso => state.open.has(iso)).forEach(loadOthers);
+    render();
+  }
+
+  // Levels from the two other governments, for comparison in an opened tile.
+  function loadOthers(iso) {
+    const others = SOURCES.filter(src => src !== state.source);
+    state.others[iso] = Object.fromEntries(others.map(src => [src, { loading: true }]));
+    others.forEach(async src => {
+      try {
+        state.others[iso][src] = await api('GET', 'advice/' + iso, null, { source: src });
+      } catch (e) {
+        state.others[iso][src] = { error: e.message };
+      }
+      if (state.others[iso]) render();
+    });
   }
 
   function clearLocal() {
@@ -600,7 +651,7 @@
           h('div', {}, h('h2', {}, t('emailTitle')), h('p', { class: 'tr-muted' }, t('emailText', { email: state.me.email }))),
           switchControl(t('emailTitle'), !!state.me.notifyEmail, setEmailAlerts))),
       state.notice && h('p', { class: 'tr-notice', role: 'status' }, state.notice),
-      h('p', { class: 'tr-muted tr-follows' }, n ? t('follows', { n, source: SOURCE[state.lang] }) : t('followsNone')));
+      h('p', { class: 'tr-muted tr-follows' }, n ? t('follows', { n, source: SOURCE[state.source] }) : t('followsNone')));
   }
 
   // --- country picker (combobox)
@@ -654,7 +705,18 @@
       h('li', { class: 'lv' + maxLevel(iso) }, cname(iso),
         h('button', { type: 'button', 'aria-label': t('remove', { name: cname(iso) }), title: t('remove', { name: cname(iso) }), onclick: () => remove(iso) }, '×'))));
 
+    const sources = h('div', { class: 'tr-sources' },
+      h('span', { class: 'tr-sources-label', id: 'tr-src-label' }, t('adviceFrom')),
+      h('div', { class: 'tr-lang tr-src', role: 'group', 'aria-labelledby': 'tr-src-label' },
+        SOURCES.map(src => h('button', {
+          type: 'button', title: SOURCE[src], 'aria-pressed': String(src === state.source),
+          onclick: () => src !== state.source && setSource(src),
+        }, SOURCE_SHORT[src]))),
+      h('span', { class: 'tr-muted tr-sources-name' }, SOURCE[state.source]));
+
     return h('section', { class: 'tr-picker' },
+      sources,
+      h('p', { class: 'tr-muted tr-small-print tr-sources-hint' }, t('adviceHint')),
       h('div', { class: 'tr-row' },
         h('div', { class: 'tr-search' }, input, list),
         h('button', { type: 'button', class: 'tr-primary', onclick: refreshAll, disabled: !state.selected.length }, t('refresh'))),
@@ -662,13 +724,18 @@
   }
 
   function toggle(iso) {
-    if (state.open.has(iso)) state.open.delete(iso); else state.open.add(iso);
+    if (state.open.has(iso)) state.open.delete(iso);
+    else {
+      state.open.add(iso);
+      if (!state.others[iso]) loadOthers(iso);
+    }
     render();
   }
 
   function toggleAll() {
     const allOpen = state.selected.every(iso => state.open.has(iso));
     state.open = allOpen ? new Set() : new Set(state.selected);
+    state.selected.filter(iso => state.open.has(iso) && !state.others[iso]).forEach(loadOthers);
     render();
   }
 
@@ -708,9 +775,21 @@
       }
       body.append(h('p', { class: 'tr-meta' },
         [a.updated && t('updated', { date: fmtDate(a.updated) }), t('source', { source: a.sourceName })].filter(Boolean).join(' · ')));
+      const cmp = state.others[iso] || {};
+      body.append(h('div', { class: 'tr-compare' },
+        h('span', { class: 'tr-muted' }, t('otherSources') + ':'),
+        SOURCES.filter(src => src !== state.source).map(src => {
+          const o = cmp[src] || { loading: true };
+          const lvl = o.loading || o.error ? 0 : (o.maxLevel > o.level ? o.maxLevel : o.level) || 0;
+          const label = o.loading ? '…' : o.error ? '—' : t('level')[o.level || 0] + (o.maxLevel > o.level ? ' / ▲ ' + t('level')[o.maxLevel] : '');
+          return h('button', {
+            type: 'button', class: 'tr-cmp lv' + lvl, title: t('followSource', { source: SOURCE[src] }), onclick: () => setSource(src),
+          }, h('b', {}, SOURCE_SHORT[src]), ' ', label);
+        })));
       body.append(h('div', { class: 'tr-summary' },
         h('h3', {}, t('summary')),
         h('p', {}, a.summary || ''),
+        t('sourceLang')[state.source] && h('p', { class: 'tr-muted tr-small-print' }, t('inLanguage', { lang: t('sourceLang')[state.source] })),
         a.url && h('a', { href: a.url, target: '_blank', rel: 'noopener' }, t('fullAdvice'), ' ↗')));
     }
 
@@ -750,7 +829,7 @@
         sorted.length ? sorted.map(card) : h('div', { class: 'tr-empty' }, t('empty'))),
       state.updatedAt && h('p', { class: 'tr-muted tr-stamp' },
         t('updatedAt', { time: state.updatedAt.toLocaleTimeString(LOCALE[state.lang], { hour: '2-digit', minute: '2-digit' }) })),
-      h('footer', { class: 'tr-foot' }, t('footer', { source: SOURCE[state.lang], news: NEWS[cfg.news] || '—' })));
+      h('footer', { class: 'tr-foot' }, t('footer', { source: SOURCE[state.source], news: NEWS[cfg.news] || '—' })));
   }
 
   function render() {
@@ -879,6 +958,10 @@
     ]);
     state.countries = countries;
     state.me = me;
+
+    const localSource = SOURCES.includes(store.get(KEY.source)) ? store.get(KEY.source) : null;
+    state.source = localSource || (SOURCES.includes(me.source) ? me.source : defaultSource());
+    if (me.loggedIn && me.source !== state.source) api('PUT', 'me', { source: state.source }).catch(() => {});
 
     if (me.loggedIn) {
       if (!store.get(KEY.lang) && cfg.languages.includes(me.lang)) state.lang = me.lang;

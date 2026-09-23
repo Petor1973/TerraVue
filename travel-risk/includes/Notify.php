@@ -3,7 +3,7 @@
  * Notifications when the travel advice for a followed country changes.
  *
  * An hourly cron job fetches the advice for every (source, country) pair that
- * users with notifications follow, compares level/maxLevel with the previous
+ * users with notifications follow (each user's chosen source, see user_source()), compares level/maxLevel with the previous
  * run and notifies those users by Web Push and/or e-mail. The first run for a
  * pair only records a baseline.
  *
@@ -111,7 +111,7 @@ class Notify {
 		// (source, country) => users following it with that source.
 		$pairs = array();
 		foreach ( $users as $id ) {
-			$source = Sources::for_language( language( get_user_meta( $id, Auth::META_LANG, true ) ) );
+			$source = user_source( (int) $id );
 			foreach ( user_list( (int) $id, Auth::META_COUNTRIES ) as $iso ) {
 				$pairs[ "$source:$iso" ][] = (int) $id;
 			}

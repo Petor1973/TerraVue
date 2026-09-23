@@ -40,6 +40,7 @@ class Privacy {
 		$fields = array(
 			array( 'name' => 'Saved countries', 'value' => implode( ', ', user_list( $user->ID, Auth::META_COUNTRIES ) ) ),
 			array( 'name' => 'Language', 'value' => (string) get_user_meta( $user->ID, Auth::META_LANG, true ) ),
+			array( 'name' => 'Travel advice source', 'value' => (string) get_user_meta( $user->ID, Auth::META_SOURCE, true ) ),
 			array( 'name' => 'Consent given at', 'value' => (string) get_user_meta( $user->ID, Auth::META_CONSENT, true ) ),
 			array( 'name' => 'E-mail notifications', 'value' => '1' === get_user_meta( $user->ID, Notify::META_EMAIL, true ) ? 'on' : 'off' ),
 			array(
@@ -64,7 +65,7 @@ class Privacy {
 		$user    = get_user_by( 'email', $email );
 		$removed = false;
 		if ( $user ) {
-			foreach ( array( Auth::META_COUNTRIES, Auth::META_LANG, Auth::META_CONSENT, Notify::META_PUSH, Notify::META_EMAIL ) as $key ) {
+			foreach ( array( Auth::META_COUNTRIES, Auth::META_LANG, Auth::META_CONSENT, Auth::META_SOURCE, Notify::META_PUSH, Notify::META_EMAIL ) as $key ) {
 				$removed = delete_user_meta( $user->ID, $key ) || $removed;
 			}
 		}

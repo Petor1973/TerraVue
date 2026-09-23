@@ -13,7 +13,7 @@ Code en commentaar: Engels.
   namen, huisstijl of koppelingen (planning, SQL Server) van een werkgever gebruiken of overnemen.
   Waarschuw Peter direct als een wijziging daar toch richting gaat (werkgeversbeleid, IE, arbeidscontract).
 - **AVG.** Persoonsgegevens beperkt tot: e-mailadres (WordPress-gebruiker), tijdstip van toestemming,
-  gekozen landen, taal, en — alleen als de gebruiker ze aanzet — push-abonnementen per apparaat
+  gekozen landen, taal, gekozen adviesbron, en — alleen als de gebruiker ze aanzet — push-abonnementen per apparaat
   (endpoint + sleutels) en de keuze voor e-mailmeldingen. Nieuwe persoonsgegevens (bv. locatie, telefoonnummer) alleen
   na expliciete afweging, met privacytekst, exporter/eraser en bewaartermijn. **Geen locatietracking.**
   Geen externe fonts/CDN's/analytics in de frontend (geen IP-lekken naar derden).
@@ -76,11 +76,17 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 - FCDO: `details.alert_status` (whole_country / parts). Alleen regionale alerts -> level 2.
 - AA: `warning` 4, `situationWarning` 3, `partialWarning` max 4, `situationPartWarning` max 3.
 - BuZa: geen kleurveld; per zin geparsed (`Sources::buza_levels`). **Bij twijfel: testgeval toevoegen.**
-- Taal kiest de bron: nl -> BuZa, en -> FCDO, de -> AA. Een bron geeft geen advies voor het eigen land.
+- **Bron = keuze van de gebruiker** ("Advies van NL · UK · DE"), los van de UI-taal: het advies van de overheid
+  van je nationaliteit/werkgever (daar hangt ook je reisverzekering aan). **Nooit op locatie** (AVG, geen
+  tracking; en inhoudelijk fout: advies hangt af van wie je bent, niet waar je bent). Standaard uit de
+  regio-instelling van de browser (`nl-NL` → NL, `de-*` → DE, anders UK), client-side; opgeslagen in
+  localStorage en user meta `travel_risk_source`; meldingen volgen dezelfde bron (`user_source()`).
+  Uitgeklapte tegel toont de niveaus van de andere twee overheden ter vergelijking.
+- Een bron geeft geen advies voor het eigen land. Samenvatting staat in de taal van de bron.
 
 ## API (travel-risk/v1)
 
-`GET advice/{ISO3}?lang=`, `GET news/{ISO3}`, `GET|PUT|DELETE me` (PUT ook `notifyEmail`), `POST login`,
+`GET advice/{ISO3}?source=` (buza|fcdo|aa; `?lang=` = standaardbron), `GET news/{ISO3}`, `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`), `POST login`,
 `POST login/verify` (`token` of `email`+`code`), `POST logout`, `GET push/key`, `POST|DELETE push`, `POST push/test`. Foutcodes als korte string (`rate_limited`, `not_found`, ...), vertaald in app.js.
 Cache: transients, alleen succesvolle antwoorden, standaard 60 min. GDELT-aanroepen minimaal 6 s uit elkaar.
 

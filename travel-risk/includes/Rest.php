@@ -2,10 +2,10 @@
 /**
  * REST API, namespace travel-risk/v1.
  *
- *   GET    /advice/{ISO3}?lang=en   Travel advice from the source for that language
+ *   GET    /advice/{ISO3}?source=   Travel advice from buza | fcdo | aa (or ?lang= for its default source)
  *   GET    /news/{ISO3}             Recent security news
  *   GET    /me                      Signed-in state, saved countries and language
- *   PUT    /me                      Save countries and/or language
+ *   PUT    /me                      Save countries, language, advice source, e-mail notifications
  *   DELETE /me                      Delete own account and data
  *   POST   /login                   Request a sign-in link by e-mail
  *   POST   /login/verify            Exchange the link token or the 6-digit code for a session
@@ -39,7 +39,10 @@ class Rest {
 			'methods'             => 'GET',
 			'callback'            => array( self::class, 'advice' ),
 			'permission_callback' => array( self::class, 'can_read' ),
-			'args'                => array( 'lang' => array( 'type' => 'string', 'default' => LANGUAGES[0] ) ),
+			'args'                => array(
+				'source' => array( 'type' => 'string', 'enum' => array_keys( Sources::NAMES ) ),
+				'lang'   => array( 'type' => 'string', 'default' => LANGUAGES[0] ),
+			),
 		) );
 		register_rest_route( self::NS, "/news/$iso", array(
 			'methods'             => 'GET',
@@ -60,6 +63,7 @@ class Rest {
 					'countries' => array( 'type' => 'array', 'items' => array( 'type' => 'string' ) ),
 					'lang'        => array( 'type' => 'string', 'enum' => LANGUAGES ),
 					'notifyEmail' => array( 'type' => 'boolean' ),
+					'source'      => array( 'type' => 'string', 'enum' => array_keys( Sources::NAMES ) ),
 				),
 			),
 			array(
@@ -138,7 +142,7 @@ class Rest {
 		if ( is_wp_error( $country ) ) {
 			return $country;
 		}
-		$source = Sources::for_language( language( $req['lang'] ) );
+		$source = $req['source'] ?: Sources::for_language( language( $req['lang'] ) );
 		try {
 			$data = cached(
 				"advice:$source:{$country['iso3']}",
@@ -200,6 +204,7 @@ class Rest {
 			'email'                => $user->user_email,
 			'countries'            => user_list( $user->ID, Auth::META_COUNTRIES ),
 			'lang'                 => get_user_meta( $user->ID, Auth::META_LANG, true ) ?: null,
+			'source'               => Sources::valid( get_user_meta( $user->ID, Auth::META_SOURCE, true ) ) ? get_user_meta( $user->ID, Auth::META_SOURCE, true ) : null,
 			'canDelete'            => ! current_user_can( 'edit_posts' ),
 			'notifyEmail'          => '1' === get_user_meta( $user->ID, Notify::META_EMAIL, true ),
 			'pushDevices'          => count( Notify::devices( $user->ID ) ),
@@ -217,6 +222,9 @@ class Rest {
 		}
 		if ( null !== $req['lang'] ) {
 			update_user_meta( $id, Auth::META_LANG, language( $req['lang'] ) );
+		}
+		if ( null !== $req['source'] ) {
+			update_user_meta( $id, Auth::META_SOURCE, $req['source'] );
 		}
 		if ( null !== $req['notifyEmail'] ) {
 			$req['notifyEmail'] ? update_user_meta( $id, Notify::META_EMAIL, '1' ) : delete_user_meta( $id, Notify::META_EMAIL );

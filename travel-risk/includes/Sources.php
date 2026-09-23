@@ -27,7 +27,7 @@ class Sources {
 	const FCDO = 'https://www.gov.uk/api/content/foreign-travel-advice';
 	const AA   = 'https://www.auswaertiges-amt.de/opendata/travelwarning';
 
-	/** UI language => source. */
+	/** Default source for a UI language, when the user has not chosen one. */
 	const BY_LANGUAGE = array(
 		'nl' => 'buza',
 		'en' => 'fcdo',
@@ -49,6 +49,10 @@ class Sources {
 
 	public static function for_language( string $lang ): string {
 		return self::BY_LANGUAGE[ $lang ] ?? 'fcdo';
+	}
+
+	public static function valid( $source ): bool {
+		return is_string( $source ) && isset( self::NAMES[ $source ] );
 	}
 
 	/**

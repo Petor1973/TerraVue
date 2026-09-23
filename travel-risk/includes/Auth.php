@@ -24,6 +24,7 @@ class Auth {
 	const META_COUNTRIES = 'travel_risk_countries';
 	const META_LANG      = 'travel_risk_lang';
 	const META_CONSENT   = 'travel_risk_consent';
+	const META_SOURCE    = 'travel_risk_source';
 
 	const TOKEN_TTL     = 30 * MINUTE_IN_SECONDS;
 	const MAX_PER_EMAIL = 3;   // link requests per address per hour

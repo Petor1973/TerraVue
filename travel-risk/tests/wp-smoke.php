@@ -95,6 +95,14 @@ wp_set_current_user( $user->ID );
 $r = call( 'PUT', 'me', array( 'countries' => array( 'sau', 'NOR', 'XXX', 'SAU' ), 'lang' => 'nl' ) );
 ok( 'countries saved, validated, deduplicated', array( 'SAU', 'NOR' ) === $r->get_data()['countries'], $r->get_data() );
 ok( 'language saved', 'nl' === $r->get_data()['lang'] );
+ok( 'no source chosen yet', null === $r->get_data()['source'] );
+ok( 'default source follows language (nl -> buza)', 'buza' === TravelRisk\user_source( $user->ID ) );
+$r = call( 'PUT', 'me', array( 'source' => 'aa' ) );
+ok( 'source saved independently of language', 'aa' === $r->get_data()['source'] && 'nl' === $r->get_data()['lang'] && 'aa' === TravelRisk\user_source( $user->ID ) );
+ok( 'unknown source refused', 400 === call( 'PUT', 'me', array( 'source' => 'xx' ) )->get_status() );
+$d = call( 'GET', 'advice/SAU', array( 'source' => 'aa', 'lang' => 'en' ) )->get_data();
+ok( 'advice source parameter wins over language', 'aa' === $d['source'], $d );
+ok( 'advice with unknown source refused', 400 === call( 'GET', 'advice/SAU', array( 'source' => 'xx' ) )->get_status() );
 
 $r = call( 'GET', 'advice/SAU', array( 'lang' => 'en' ) );
 $d = $r->get_data();
@@ -149,13 +157,14 @@ ok( 'push request is encrypted and signed', 'aes128gcm' === $p['args']['headers'
 ok( 'e-mail notifications on', true === call( 'PUT', 'me', array( 'notifyEmail' => true ) )->get_data()['notifyEmail'] );
 
 // hourly check: first run is the baseline, a change triggers push + e-mail
-update_user_meta( $user->ID, TravelRisk\Auth::META_LANG, 'en' );
+update_user_meta( $user->ID, TravelRisk\Auth::META_LANG, 'nl' );
+update_user_meta( $user->ID, TravelRisk\Auth::META_SOURCE, 'fcdo' ); // Dutch interface, UK advice
 delete_option( TravelRisk\Notify::OPT_SNAPSHOT );
 $GLOBALS['travel_risk_pushes'] = array();
 @unlink( WP_CONTENT_DIR . '/last-mail.txt' );
 TravelRisk\Notify::check();
 $snap = get_option( TravelRisk\Notify::OPT_SNAPSHOT );
-ok( 'baseline stored per source and country', isset( $snap['fcdo:SAU'], $snap['fcdo:NOR'] ) && 2 === $snap['fcdo:SAU']['level'], $snap );
+ok( 'baseline stored per chosen source and country', isset( $snap['fcdo:SAU'], $snap['fcdo:NOR'] ) && ! isset( $snap['buza:SAU'] ) && 2 === $snap['fcdo:SAU']['level'], $snap );
 ok( 'no notification on baseline', ! $GLOBALS['travel_risk_pushes'] && ! file_exists( WP_CONTENT_DIR . '/last-mail.txt' ) );
 
 TravelRisk\Notify::check();
@@ -178,7 +187,7 @@ $mail = '';
 foreach ( explode( "\n-----\n", (string) @file_get_contents( WP_CONTENT_DIR . '/mail-log.txt' ) ) as $m ) {
 	$mail = str_starts_with( $m, $email ) ? $m : $mail;
 }
-ok( 'change: e-mail sent', str_starts_with( $mail, $email ) && str_contains( $mail, 'Travel advice changed: Saudi Arabia' ) && str_contains( $mail, 'Exercise caution → Do not travel' ), $mail );
+ok( 'change: e-mail sent in the user\'s language', str_starts_with( $mail, $email ) && str_contains( $mail, 'Reisadvies gewijzigd: Saoedi-Arabië' ) && str_contains( $mail, 'Let op → Niet reizen' ), $mail );
 ok( 'snapshot updated', 4 === get_option( TravelRisk\Notify::OPT_SNAPSHOT )['fcdo:SAU']['level'] );
 ok( 'app cache refreshed by check', 4 === call( 'GET', 'advice/SAU', array( 'lang' => 'en' ) )->get_data()['level'] );
 
@@ -193,6 +202,7 @@ call( 'POST', 'push', array( 'endpoint' => 'https://fcm.googleapis.com/fcm/send/
 // privacy tools
 $export = TravelRisk\Privacy::export( $email );
 ok( 'privacy export has countries', str_contains( wp_json_encode( $export ), 'SAU, NOR' ) );
+ok( 'privacy export has advice source', str_contains( wp_json_encode( $export ), '"fcdo"' ) );
 ok( 'privacy export has notification data', str_contains( wp_json_encode( $export ), 'fcm.googleapis.com' ) && str_contains( wp_json_encode( $export ), '"on"' ) );
 
 // delete own account

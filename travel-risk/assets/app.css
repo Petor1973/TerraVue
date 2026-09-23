@@ -123,6 +123,26 @@
 .trisk .tr-chips li.lv3 { --dot: var(--tr-lv3); }
 .trisk .tr-chips li.lv4 { --dot: var(--tr-lv4); }
 
+/* advice source (whose government's advice the user follows) */
+.trisk .tr-sources { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.trisk .tr-sources-label { font-weight: 700; font-size: .92rem; }
+.trisk .tr-src { background: var(--tr-bg); }
+.trisk .tr-sources-name { font-size: .88rem; }
+.trisk .tr-sources-hint { margin: 0 0 12px; font-size: .82rem; }
+
+/* comparison with the other governments inside an opened tile */
+.trisk .tr-compare { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .88rem; }
+.trisk .tr-cmp {
+  --dot: var(--tr-lv0);
+  display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 4px 10px 4px 8px;
+  font: 500 .82rem/1.2 var(--tr-font); border: 1px solid var(--tr-line); background: var(--tr-bg); text-align: left;
+}
+.trisk .tr-cmp::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--dot); flex: none; }
+.trisk .tr-cmp.lv1 { --dot: var(--tr-lv1); }
+.trisk .tr-cmp.lv2 { --dot: var(--tr-lv2); }
+.trisk .tr-cmp.lv3 { --dot: var(--tr-lv3); }
+.trisk .tr-cmp.lv4 { --dot: var(--tr-lv4); }
+
 /* country tiles */
 .trisk .tr-gridbar { display: flex; justify-content: flex-end; margin: -8px 0 8px; }
 .trisk .tr-small { min-height: 32px; padding: 6px 12px; font-size: .85rem; color: var(--tr-primary); border: 0; }

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Terravue – Travel Risk Monitor
  * Description:       Official travel advice (NL, UK, DE) and recent security news per country, as an installable web app. Place the shortcode [travel_risk] on a page.
- * Version:           0.4.0
+ * Version:           0.5.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Peter Langerak
@@ -14,7 +14,7 @@ namespace TravelRisk;
 
 defined( 'ABSPATH' ) || exit;
 
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
 const FILE    = __FILE__;
 const DIR     = __DIR__;
 
@@ -67,6 +67,16 @@ function countries(): array {
 function user_list( int $user_id, string $key ): array {
 	$value = get_user_meta( $user_id, $key, true );
 	return is_array( $value ) ? array_values( $value ) : array();
+}
+
+/**
+ * Advice source a user follows: their own choice, else the default for their language.
+ * The source reflects whose government advice applies to them (nationality/employer),
+ * deliberately not the device location (no location tracking).
+ */
+function user_source( int $user_id ): string {
+	$source = get_user_meta( $user_id, Auth::META_SOURCE, true );
+	return Sources::valid( $source ) ? $source : Sources::for_language( language( get_user_meta( $user_id, Auth::META_LANG, true ) ) );
 }
 
 function language( $value ): string {
@@ -137,5 +147,6 @@ function uninstall(): void {
 	delete_metadata( 'user', 0, Auth::META_COUNTRIES, '', true );
 	delete_metadata( 'user', 0, Auth::META_LANG, '', true );
 	delete_metadata( 'user', 0, Auth::META_CONSENT, '', true );
+	delete_metadata( 'user', 0, Auth::META_SOURCE, '', true );
 	// Accounts themselves are ordinary WordPress users and are left in place on purpose.
 }

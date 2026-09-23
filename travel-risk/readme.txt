@@ -1,7 +1,7 @@
 === Terravue – Travel Risk Monitor ===
 Requires at least: 6.4
 Requires PHP: 8.0
-Stable tag: 0.4.0
+Stable tag: 0.5.0
 License: Proprietary
 
 Official travel advice and recent security news per country, as an installable web app (PWA).
@@ -14,8 +14,11 @@ Users pick the countries they care about and see, per country:
   including a warning when parts of the country have a stricter level;
 * recent security-related news (last 48 hours by default).
 
-The advice source follows the interface language: English – UK FCDO, German – Auswärtiges Amt,
-Dutch – Ministerie van Buitenlandse Zaken. The interface is English by default, with German and Dutch.
+Users choose whose government advice they follow (usually their nationality or employer): the
+Netherlands (Ministerie van Buitenlandse Zaken), the UK (FCDO) or Germany (Auswärtiges Amt). This is
+independent of the interface language; the default comes from the browser's region setting, never from
+the device location. An opened country shows the other governments' levels for comparison.
+The interface is English by default, with German and Dutch.
 
 Users register once with their e-mail address (sign-in link or 6-digit code, no password, double opt-in).
 Their countries and language are saved to their account and on the device, so the app also works offline.
@@ -40,7 +43,7 @@ home screen (iOS 16.4+).
 
 == Privacy ==
 
-Stored per user: e-mail address, time of consent, chosen countries, language; and only if the user turns
+Stored per user: e-mail address, time of consent, chosen countries, language, chosen advice source; and only if the user turns
 them on: push subscriptions per device and the e-mail notification preference. Users can delete their
 account in the app. The plugin registers with Tools > Export / Erase Personal Data. External services
 receive country names/codes only. The front end loads no third-party fonts, scripts or trackers.

@@ -98,7 +98,7 @@ class Notify {
 	// ------------------------------------------------------------------ change detection
 
 	/**
-	 * @return array{users:int, pairs:int, errors:int, changes:int, notified:int, alerts:int, news:int}
+	 * @return array{users:int, pairs:int, errors:int, changes:int, notified:int, alerts:int, world:int, digests:int, news:int}
 	 */
 	public static function check( bool $prefetch = true ): array {
 		if ( function_exists( 'set_time_limit' ) ) {
@@ -127,7 +127,7 @@ class Notify {
 		$old     = (array) get_option( self::OPT_SNAPSHOT, array() );
 		$new     = array();
 		$sources = sources();
-		$stats   = array( 'users' => count( $users ), 'pairs' => count( $pairs ), 'errors' => 0, 'changes' => 0, 'notified' => 0, 'alerts' => 0, 'news' => 0 );
+		$stats   = array( 'users' => count( $users ), 'pairs' => count( $pairs ), 'errors' => 0, 'changes' => 0, 'notified' => 0, 'alerts' => 0, 'world' => 0, 'digests' => 0, 'news' => 0 );
 		foreach ( $pairs as $key => $followers ) {
 			list( $source, $iso ) = explode( ':', $key );
 			$country              = countries()[ $iso ] ?? null;
@@ -158,6 +158,9 @@ class Notify {
 		update_option( self::OPT_SNAPSHOT, $new, false );
 		update_option( self::OPT_LAST, time(), false );
 		$stats['alerts'] = self::check_alerts( $by_iso );
+		$world            = World::collect();
+		$stats['world']   = $world['events'];
+		$stats['digests'] = World::send_digests();
 
 		$isos           = array_unique( array_map( fn( $k ) => explode( ':', $k )[1], array_keys( $pairs ) ) );
 		$stats['news']  = $prefetch ? self::prefetch_news( $isos ) : 0;
@@ -297,12 +300,14 @@ class Notify {
 	/**
 	 * Push to all of the user's devices, plus e-mail when that is on.
 	 *
+	 * @param array  $msg title, body; optional mail (longer e-mail text), url and tab (app screen to open).
 	 * @param string $tag Notifications with the same tag replace each other on the device.
 	 * @return array{push:array{sent:int,failed:int}, email:bool}
 	 */
-	private static function send( int $user_id, array $msg, string $tag ): array {
+	public static function send( int $user_id, array $msg, string $tag ): array {
 		$lang   = language( get_user_meta( $user_id, Auth::META_LANG, true ) );
-		$result = array( 'push' => self::push_user( $user_id, $msg + array( 'tag' => $tag ) ), 'email' => false );
+		$push   = array_intersect_key( $msg, array_flip( array( 'title', 'body', 'url', 'tab' ) ) ); // stays well under the 4 KB push limit
+		$result = array( 'push' => self::push_user( $user_id, $push + array( 'tag' => $tag ) ), 'email' => false );
 
 		if ( '1' === get_user_meta( $user_id, self::META_EMAIL, true ) ) {
 			$user   = get_user_by( 'id', $user_id );
@@ -312,7 +317,7 @@ class Notify {
 				'nl' => "Open de app: %s\n\nJe ontvangt dit omdat e-mailmeldingen aan staan. Zet ze uit in de app onder Meldingen.",
 			)[ $lang ];
 			if ( $user ) {
-				$result['email'] = (bool) wp_mail( $user->user_email, setting( 'brand_name' ) . ': ' . $msg['title'], $msg['body'] . "\n\n" . sprintf( $footer, app_url() ) );
+				$result['email'] = (bool) wp_mail( $user->user_email, setting( 'brand_name' ) . ': ' . $msg['title'], ( $msg['mail'] ?? $msg['body'] ) . "\n\n" . sprintf( $footer, $msg['url'] ?? app_url() ) );
 			}
 		}
 		return $result;

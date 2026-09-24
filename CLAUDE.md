@@ -18,7 +18,7 @@ Code en commentaar: Engels.
   werkgeversdata in de app; collega's registreren zelf; de app vervangt geen travel-security-beleid of -dienst.
 - **AVG.** Persoonsgegevens beperkt tot: e-mailadres (WordPress-gebruiker), tijdstip van toestemming,
   gekozen landen, taal, gekozen adviesbron, en — alleen als de gebruiker ze aanzet — push-abonnementen per apparaat
-  (endpoint + sleutels) en de keuze voor e-mailmeldingen. Nieuwe persoonsgegevens (bv. locatie, telefoonnummer) alleen
+  (endpoint + sleutels), de keuze voor e-mailmeldingen en het uur (UTC) van het dagelijks wereldoverzicht + tijdstip laatst verstuurd. Nieuwe persoonsgegevens (bv. locatie, telefoonnummer) alleen
   na expliciete afweging, met privacytekst, exporter/eraser en bewaartermijn. **Geen locatietracking.**
   Geen externe fonts/CDN's/analytics in de frontend (geen IP-lekken naar derden).
 - **Registratie** is double opt-in via magic link of 6-cijferige code (zelfde mail; code voor de
@@ -44,10 +44,16 @@ Code en commentaar: Engels.
   altijd terug te halen via het accountmenu en (iOS) vanuit Meldingen.
 - **Geïnstalleerde app** opent `app-pagina?tr_app=1` met `templates/app.php`: geen thema-header/-footer.
   Rekening houden met `env(safe-area-inset-*)` (notch, home-indicator).
-- **Navigatie:** **zwevende tabbalk ("eiland")** zoals in de App Store (nu: Landen, Meldingen, Instellingen; Meldingen alleen ingelogd): los van de onderrand, afgerond,
+- **Navigatie:** **zwevende tabbalk ("eiland")** zoals in de App Store (nu: Landen, Wijzigingen, Meldingen, Instellingen; Meldingen alleen ingelogd): los van de onderrand, afgerond,
   deels transparant (`backdrop-filter: blur`), icoon + kort label per tab, actieve tab in accentkleur,
   ruimte voor `safe-area-inset-bottom`. Op brede schermen (≥ 900px, niet in de app) staat dezelfde
   navigatie in de kopbalk. Het gebruikersmenu rechtsboven blijft. Nieuwe schermen = nieuwe tab.
+- **Uitgeklapte tegel met regionaal advies:** lijst "Regionale adviezen (bron)" (`regions`, strengste eerst, plus "Rest van
+  het land") en de kaart van de gekozen overheid; heeft die geen kaart, dan die van UK/NL met de opmerking dat de kleuren
+  kunnen afwijken. Kaart alleen bij regionale verschillen.
+- **Wijzigingen-tab:** logboek (7 dagen) per dag, filter "Advies van <bron>" / "Alle overheden", knop "+ Volgen".
+  Het dagelijks overzicht (Meldingen-tab: schakelaar + tijdstip in lokale tijd, opgeslagen in UTC) opent deze tab
+  (`#tr-tab=changes`; bij een al open app via een bericht van de service worker).
 - **Instellingen-tab:** "Advies van" (bronkeuze), "Reisadvies en bronnen" (normalisatie-uitleg + alle bronvermeldingen),
   "Over" (versienummer uit `VERSION`, rondleiding, installeren, privacy). Op het Landen-scherm blijft alleen de
   bronvermelding van de gekozen bron staan (OGL vraagt vermelding waar de informatie getoond wordt) + link naar Instellingen.
@@ -64,6 +70,8 @@ travel-risk/                 De plugin (deze map wordt gezipt en geüpload)
   includes/Sources.php       Reisadvies-adapters BuZa / FCDO / AA -> niveau 1..4 (zonder WP, testbaar)
   includes/News.php          Nieuws (GDELT, Google News RSS), ruisfilter (zonder WP, testbaar); standaard uit
   includes/Alerts.php        GDACS-rampenmeldingen: RSS -> events per land (zonder WP, testbaar)
+  includes/Maps.php          Kaarten van overheden (UK, NL) als kopie op de eigen server
+  includes/World.php         Wereldoverzicht: wereldwijde controle, logboek wijzigingen, dagelijks overzicht
   includes/Rest.php          REST API travel-risk/v1
   includes/Auth.php          Magic link + 6-cijferige code / double opt-in, rate limiting
   includes/Notify.php        Meldingen: push-apparaten, uurlijkse controle (WP-Cron), push + e-mail
@@ -101,6 +109,15 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
   levert (FCDO `details.change_description`, VS eerste zin "Reissued/Updated …", CA `recent-updates`,
   AA "Letzte Änderungen:", BuZa "Wat is er veranderd?"); anders null. Getoond als
   "Laatste wijziging" in de uitgeklapte tegel; badge "Recent gewijzigd" als `updated` < 3 dagen oud is.
+- Elk advies heeft `regions` (lijst [level, text] in de taal van de bron): FCDO/US uit kopjes "advises against all
+  travel to:" / "Do Not Travel To:" + lijstitems of de rest van de zin (`Sources::listed_regions`; "rest of"/"whole"
+  en het land zelf tellen niet), BuZa uit de regionale kleurzinnen, AA uit de regionale "abgeraten/gewarnt"-zinnen,
+  CA geen (index noemt alleen dat er regionale adviezen zijn). En `map` ({url, type image|pdf}): FCDO
+  `details.image` (anders `details.document`), BuZa een afbeelding met "kaart/map" in of vlak voor de URL
+  (**nog live verifiëren**); overige null. Kaarten gaan via `GET map/{source}/{ISO3}`: server downloadt één keer
+  naar uploads/travel-risk-maps/ (alleen https op `Sources::MAP_HOSTS`, alleen PNG/JPG/GIF/WebP/PDF, geen SVG,
+  max 8 MB, inhoud gecontroleerd), de app laadt alleen de eigen kopie (geen IP-lekken). Licentie FCDO-kaarten
+  (OGL, mogelijk kaartdata van derden) **nog verifiëren**.
 - Elk advies heeft `basis`: de ruwe gegevens waarop het niveau berust (alert_status, AA-vlaggen + zin,
   beslissende BuZa-zin, US-titel, CA advisory-state). De app toont dit als "Waarom dit niveau",
   zodat afwijkingen live te controleren zijn.
@@ -147,7 +164,7 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 
 ## API (travel-risk/v1)
 
-`GET advice/{ISO3}?source=` (buza|fcdo|aa|usdos|gac; `?lang=` = standaardbron), `GET alerts` (alle actuele GDACS-events met onze ISO3-codes; 404 `alerts_disabled` als uit), `GET news/{ISO3}` (404 `news_disabled` als uit), `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`), `POST login`,
+`GET advice/{ISO3}?source=` (buza|fcdo|aa|usdos|gac; `?lang=` = standaardbron), `GET alerts` (alle actuele GDACS-events met onze ISO3-codes; 404 `alerts_disabled` als uit), `GET map/{source}/{ISO3}` (lokale kopie van de overheidskaart; 404 `no_map`), `GET changes?days=&source=` (wereldlogboek + `since`), `GET news/{ISO3}` (404 `news_disabled` als uit), `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`, `digestHour` 0–23 UTC of −1 = uit), `POST login`,
 `POST login/verify` (`token` of `email`+`code`), `POST logout`, `GET push/key`, `POST|DELETE push`. Foutcodes als korte string (`rate_limited`, `not_found`, ...), vertaald in app.js.
 Cache: transients, alleen succesvolle antwoorden, standaard 60 min. GDELT-aanroepen minimaal 6 s uit elkaar.
 
@@ -167,6 +184,17 @@ gebruiker. Eerste run per paar = alleen nulmeting. Bij een storing blijft de oud
 Daarna `Notify::check_alerts()`: nieuwe oranje/rode GDACS-events voor gevolgde landen (ongeacht bron) → één
 melding per gebruiker per event, opnieuw bij escalatie oranje → rood (option `travel_risk_alerts_seen`,
 event-id → niveau; eerste run = nulmeting). Groen meldt nooit.
+
+**Wereldoverzicht (`World`):** elke uurlijkse controle leest ook alle landen × alle bronnen: VS en CA uit hun ene
+feed, NL/UK/DE max. `World::PER_RUN` (40) verzoeken per run, elk paar opnieuw na 20 u (alles rond in ~11 uur).
+Eerste lezing per paar = nulmeting. Wijzigingen in option `travel_risk_world_log` (14 dagen, max 3000):
+`level` (level/maxLevel), `updated` (datum `updated` veranderd zonder niveauwijziging, met `latest`) en `alert`
+(nieuwe oranje/rode GDACS-events wereldwijd). Na een plugin-update wordt de wereld-nulmeting gewist (het logboek blijft).
+Dagelijks overzicht: gebruikers met `travel_risk_digest` (UTC-uur) krijgen bij de eerste run op/na dat uur, 1× per
+UTC-dag, de wijzigingen sinds het vorige overzicht voor hun eigen bron + alle rampen (push: 3 regels + "+n meer",
+e-mail: alles). Niets veranderd → geen bericht, tenzij de beheerinstelling "Also send … when nothing changed" aan staat.
+Test: Terravue → Notifications → "Send the daily overview now", of `wp travel-risk digest --to=<id|email>`.
+De uurlijkse controle duurt hierdoor langer (tot ~40 extra verzoeken); echte server-cron aanbevolen.
 Pushdienst antwoordt 404/410 → apparaat wordt verwijderd. Uitloggen/account wissen verwijdert het apparaat.
 iOS: push alleen in de app op het beginscherm (iOS 16.4+). Echte cron aanbevolen (zie instellingenpagina).
 
@@ -189,8 +217,7 @@ gevolgde landen (max. 30 per run, 6 s uit elkaar) tijdens de uurlijkse controle.
    US-landnamen tegen `name_matches()` (ontbrekende treffers → alias); licenties buza/aa bevestigen.
 3. Nieuws: route A gebouwd (0.8.0). Eventueel later een betaalde nieuws-API met licentie of professionele
    risicodata (Riskline, Crisis24). GDACS-voorwaarden en "laatste wijziging"-velden live controleren.
-7. Dagelijks wereldoverzicht (voorstel sept. 2026, nog niet bevestigd): alle landen/bronnen 1× per dag,
-   push/e-mail op een gekozen uur, tab "Wijzigingen", ook "advies bijgewerkt zonder niveauwijziging".
+7. Wereldoverzicht gebouwd (0.11.0). Eventueel: stille uren, overzicht per week, kaartvoorwaarden bevestigen.
 4. Regio's per land (bv. werklocatie in een regionaal waarschuwingsgebied).
 5. Definitieve naam + merkonderzoek (BOIP/EUIPO), logo en kleuren; daarna `brand_name` en kleuren instellen.
 6. Hosting: HTTPS verplicht (service worker, push), SMTP voor wp_mail, verwerkersovereenkomst met hoster.

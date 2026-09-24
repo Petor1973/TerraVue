@@ -24,7 +24,15 @@
       fullAdvice: 'Full travel advice', newsTitle: 'News, last {h} hours', newsLoading: 'Looking for news…',
       newsNone: 'No reports about security incidents found.', loading: 'Loading travel advice…',
       newsCount: '{n} news', parts: 'Parts: {level}', expandAll: 'Expand all', collapseAll: 'Collapse all',
-      menu: 'Menu', tabCountries: 'Countries', tabAlerts: 'Notifications', tabSettings: 'Settings',
+      menu: 'Menu', tabCountries: 'Countries', tabAlerts: 'Notifications', tabSettings: 'Settings', tabChanges: 'Changes',
+      changesTitle: 'Changes worldwide', changesLead: 'Changes in the travel advice and new disaster alerts, last 7 days.',
+      changesMine: 'Advice from {source}', changesAll: 'All governments', changesNone: 'No changes in the last 7 days.',
+      changesBuilding: 'The worldwide check started recently; changes appear from tomorrow.', changeUpdated: 'Advice updated',
+      follow: 'Follow', digestTitle: 'Daily world overview', digestTime: 'Time',
+      digestText: 'Every day at the time you choose: changes in the advice of {source} worldwide and new orange or red disaster alerts, by push and/or e-mail as set above.',
+      digestNeedsChannel: 'Turn on push or e-mail above to receive it.',
+      regionsTitle: 'Regional advice ({source})', restOfCountry: 'Rest of the country', mapOf: 'Map: {source}',
+      mapOther: 'This map is from another government; its colours may differ from the advice you follow.', mapPdf: 'Open the map (PDF)',
       settingsTitle: 'Settings', sourcesTitle: 'Travel advice and sources', aboutTitle: 'About {brand}', version: 'Version {v}',
       tourMenu: 'Show the tour', tourNext: 'Next', tourBack: 'Back', tourDone: 'Done', tourSkip: 'Skip', tourStep: 'Step {i} of {n}',
       tour: {
@@ -32,6 +40,7 @@
         search: ['Add your countries', 'Type a country here, for example where your people work. Your list is saved with your account.'],
         tile: ['One tile per country', 'The colour shows the advice level; labels flag regional warnings, disaster alerts and recent updates. Tap a tile for the full advice, the other governments and current alerts.'],
         alerts: ['Notifications', 'Turn on push or e-mail here to hear when the advice for one of your countries changes or a disaster alert is issued.'],
+        changes: ['Changes worldwide', 'Changes in the travel advice and new disaster alerts from all over the world, also for countries you do not follow. Get them as a daily overview under Notifications.'],
         settings: ['Settings', 'Choose whose government advice you follow, see the sources and licences, and find the app version.'],
         account: ['Your account', 'Install the app, show this tour again, or sign out.'],
       },
@@ -81,7 +90,7 @@
       err: {
         not_found: 'No travel advice available from this source.',
         no_home_advice: 'This source does not publish advice for its own country.',
-        rate_limited: 'The news service is busy. Try again in a minute.',
+        rate_limited: 'The news service is busy. Try again in a minute.', no_map: 'No map available.',
         unexpected_response: 'Unexpected answer from the source.',
         consent_required: 'Please give your consent to continue.',
         invalid_email: 'Please enter a valid e-mail address.',
@@ -109,7 +118,15 @@
       fullAdvice: 'Vollständige Reise- und Sicherheitshinweise', newsTitle: 'Nachrichten, letzte {h} Stunden',
       newsLoading: 'Suche nach Nachrichten…', newsNone: 'Keine Meldungen über Sicherheitsvorfälle gefunden.',
       newsCount: '{n} Meldungen', parts: 'Teilweise: {level}', expandAll: 'Alle aufklappen', collapseAll: 'Alle zuklappen',
-      menu: 'Menü', tabCountries: 'Länder', tabAlerts: 'Benachrichtigungen', tabSettings: 'Einstellungen',
+      menu: 'Menü', tabCountries: 'Länder', tabAlerts: 'Benachrichtigungen', tabSettings: 'Einstellungen', tabChanges: 'Änderungen',
+      changesTitle: 'Änderungen weltweit', changesLead: 'Änderungen der Reisehinweise und neue Katastrophenwarnungen der letzten 7 Tage.',
+      changesMine: 'Hinweise von {source}', changesAll: 'Alle Regierungen', changesNone: 'Keine Änderungen in den letzten 7 Tagen.',
+      changesBuilding: 'Die weltweite Prüfung hat gerade begonnen; Änderungen erscheinen ab morgen.', changeUpdated: 'Hinweis aktualisiert',
+      follow: 'Folgen', digestTitle: 'Täglicher Weltüberblick', digestTime: 'Uhrzeit',
+      digestText: 'Jeden Tag zur gewählten Uhrzeit: Änderungen der Hinweise von {source} weltweit und neue orange oder rote Katastrophenwarnungen, per Push und/oder E-Mail wie oben eingestellt.',
+      digestNeedsChannel: 'Schalten Sie oben Push oder E-Mail ein, um ihn zu erhalten.',
+      regionsTitle: 'Regionale Hinweise ({source})', restOfCountry: 'Übriges Land', mapOf: 'Karte: {source}',
+      mapOther: 'Diese Karte stammt von einer anderen Regierung; ihre Farben können von den Hinweisen abweichen, denen Sie folgen.', mapPdf: 'Karte öffnen (PDF)',
       settingsTitle: 'Einstellungen', sourcesTitle: 'Reisehinweise und Quellen', aboutTitle: 'Über {brand}', version: 'Version {v}',
       tourMenu: 'Einführung zeigen', tourNext: 'Weiter', tourBack: 'Zurück', tourDone: 'Fertig', tourSkip: 'Überspringen', tourStep: 'Schritt {i} von {n}',
       tour: {
@@ -117,6 +134,7 @@
         search: ['Länder hinzufügen', 'Geben Sie hier ein Land ein, z. B. wo Ihre Leute arbeiten. Ihre Liste wird mit Ihrem Konto gespeichert.'],
         tile: ['Eine Kachel pro Land', 'Die Farbe zeigt die Hinweisstufe; Kennzeichen markieren regionale Warnungen, Katastrophenwarnungen und neue Änderungen. Tippen Sie auf eine Kachel für den vollständigen Hinweis, die anderen Regierungen und aktuelle Warnungen.'],
         alerts: ['Benachrichtigungen', 'Schalten Sie hier Push oder E-Mail ein, um zu erfahren, wenn sich der Hinweis für eines Ihrer Länder ändert oder eine Katastrophenwarnung erscheint.'],
+        changes: ['Änderungen weltweit', 'Änderungen der Reisehinweise und neue Katastrophenwarnungen aus aller Welt, auch für Länder, denen Sie nicht folgen. Als täglichen Überblick unter Benachrichtigungen.'],
         settings: ['Einstellungen', 'Wählen Sie, welcher Regierung Sie folgen, und finden Sie Quellen, Lizenzen und die App-Version.'],
         account: ['Ihr Konto', 'App installieren, diese Einführung erneut zeigen oder abmelden.'],
       },
@@ -167,7 +185,7 @@
       err: {
         not_found: 'Diese Quelle bietet für dieses Land keine Hinweise.',
         no_home_advice: 'Diese Quelle veröffentlicht keine Hinweise für das eigene Land.',
-        rate_limited: 'Der Nachrichtendienst ist ausgelastet. Bitte in einer Minute erneut versuchen.',
+        rate_limited: 'Der Nachrichtendienst ist ausgelastet. Bitte in einer Minute erneut versuchen.', no_map: 'Keine Karte verfügbar.',
         unexpected_response: 'Unerwartete Antwort der Quelle.',
         consent_required: 'Bitte erteilen Sie Ihre Einwilligung, um fortzufahren.',
         invalid_email: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
@@ -195,7 +213,15 @@
       fullAdvice: 'Volledig reisadvies', newsTitle: 'Nieuws, afgelopen {h} uur', newsLoading: 'Nieuws zoeken…',
       newsNone: 'Geen berichten over veiligheidsincidenten gevonden.', loading: 'Reisadvies ophalen…',
       newsCount: '{n} berichten', parts: 'Deels: {level}', expandAll: 'Alles uitklappen', collapseAll: 'Alles inklappen',
-      menu: 'Menu', tabCountries: 'Landen', tabAlerts: 'Meldingen', tabSettings: 'Instellingen',
+      menu: 'Menu', tabCountries: 'Landen', tabAlerts: 'Meldingen', tabSettings: 'Instellingen', tabChanges: 'Wijzigingen',
+      changesTitle: 'Wijzigingen wereldwijd', changesLead: 'Wijzigingen in reisadviezen en nieuwe rampenmeldingen van de afgelopen 7 dagen.',
+      changesMine: 'Advies van {source}', changesAll: 'Alle overheden', changesNone: 'Geen wijzigingen in de afgelopen 7 dagen.',
+      changesBuilding: 'De wereldwijde controle is net gestart; wijzigingen verschijnen vanaf morgen.', changeUpdated: 'Advies bijgewerkt',
+      follow: 'Volgen', digestTitle: 'Dagelijks wereldoverzicht', digestTime: 'Tijdstip',
+      digestText: 'Elke dag op het gekozen tijdstip: wijzigingen in het advies van {source} wereldwijd en nieuwe oranje of rode rampenmeldingen, via push en/of e-mail zoals hierboven ingesteld.',
+      digestNeedsChannel: 'Zet hierboven push of e-mail aan om het te ontvangen.',
+      regionsTitle: 'Regionale adviezen ({source})', restOfCountry: 'Rest van het land', mapOf: 'Kaart: {source}',
+      mapOther: 'Deze kaart is van een andere overheid; de kleuren kunnen afwijken van het advies dat je volgt.', mapPdf: 'Kaart openen (PDF)',
       settingsTitle: 'Instellingen', sourcesTitle: 'Reisadvies en bronnen', aboutTitle: 'Over {brand}', version: 'Versie {v}',
       tourMenu: 'Rondleiding tonen', tourNext: 'Volgende', tourBack: 'Vorige', tourDone: 'Klaar', tourSkip: 'Overslaan', tourStep: 'Stap {i} van {n}',
       tour: {
@@ -203,6 +229,7 @@
         search: ['Landen toevoegen', 'Typ hier een land, bijvoorbeeld waar jouw mensen werken. Je lijst wordt bij je account bewaard.'],
         tile: ['Eén tegel per land', 'De kleur toont het adviesniveau; labels wijzen op regionale waarschuwingen, rampenmeldingen en recente wijzigingen. Tik op een tegel voor het volledige advies, de andere overheden en actuele meldingen.'],
         alerts: ['Meldingen', 'Zet hier push of e-mail aan om te horen wanneer het advies voor een van je landen wijzigt of er een rampenmelding is.'],
+        changes: ['Wijzigingen wereldwijd', 'Wijzigingen in reisadviezen en nieuwe rampenmeldingen uit de hele wereld, ook voor landen die je niet volgt. Als dagelijks overzicht onder Meldingen.'],
         settings: ['Instellingen', 'Kies welke overheid je volgt, en vind hier de bronnen, licenties en het versienummer van de app.'],
         account: ['Je account', 'App installeren, deze rondleiding opnieuw bekijken of uitloggen.'],
       },
@@ -252,7 +279,7 @@
       err: {
         not_found: 'Deze bron heeft geen reisadvies voor dit land.',
         no_home_advice: 'Deze bron publiceert geen advies voor het eigen land.',
-        rate_limited: 'De nieuwsdienst is druk. Probeer het over een minuut opnieuw.',
+        rate_limited: 'De nieuwsdienst is druk. Probeer het over een minuut opnieuw.', no_map: 'Geen kaart beschikbaar.',
         unexpected_response: 'Onverwacht antwoord van de bron.',
         consent_required: 'Geef toestemming om verder te gaan.',
         invalid_email: 'Vul een geldig e-mailadres in.',
@@ -306,12 +333,15 @@
     me: { loggedIn: false, registrationRequired: false },
     view: 'loading',        // loading | auth | sent | app
     open: new Set(),        // countries shown with full details
-    tab: 'countries',       // countries | alerts | settings
+    tab: 'countries',       // countries | changes | alerts | settings
     push: 'unknown',        // unknown | unsupported | denied | off | on | busy
     notice: '', code: '',
     email: '', consent: false, sentTo: '', authError: '', menuOpen: false, installPrompt: null, updatedAt: null,
     guide: false,           // install instructions sheet open
     tour: null,             // index of the current tour step, or null
+    changes: null,          // null | {loading} | {items, since} | {error}: worldwide changes
+    changesAll: false,      // Changes tab: all governments instead of the chosen one
+    maps: {},               // 'source:ISO' -> {loading} | {url, type} | {error}
   };
 
   const t = (key, vars = {}) => {
@@ -454,6 +484,8 @@
     if (state.me.loggedIn) api('PUT', 'me', { source }).catch(() => {});
     state.selected.forEach(loadAdvice);
     state.selected.filter(iso => state.open.has(iso)).forEach(loadOthers);
+    state.changes = null;
+    if (state.tab === 'changes') loadChanges();
     render();
   }
 
@@ -514,18 +546,19 @@
   const ICONS = {
     countries: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>',
     alerts: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+    changes: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>',
     settings: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>',
   };
   const hasTabs = () => state.view === 'app';
-  const tabIds = () => (state.me.loggedIn ? ['countries', 'alerts', 'settings'] : ['countries', 'settings']);
-  const TAB_LABEL = { countries: 'tabCountries', alerts: 'tabAlerts', settings: 'tabSettings' };
+  const tabIds = () => (state.me.loggedIn ? ['countries', 'changes', 'alerts', 'settings'] : ['countries', 'changes', 'settings']);
+  const TAB_LABEL = { countries: 'tabCountries', changes: 'tabChanges', alerts: 'tabAlerts', settings: 'tabSettings' };
 
   // Same navigation twice: in the top bar on wide screens, as a bottom tab bar on phones and in the app.
   function tabs(where) {
     return h('nav', { class: 'tr-tabs tr-tabs-' + where, 'aria-label': t('menu') },
       tabIds().map(id => h('button', {
         type: 'button', 'aria-current': state.tab === id ? 'page' : null, 'data-tab': id,
-        onclick: () => { state.tab = id; state.menuOpen = false; state.notice = ''; render(); window.scrollTo(0, 0); },
+        onclick: () => goTab(id),
       }, h('span', { class: 'tr-ico', 'aria-hidden': 'true', innerHTML: ICONS[id] }),
         h('span', {}, t(TAB_LABEL[id])))));
   }
@@ -687,6 +720,33 @@
     render();
   }
 
+  // The digest hour is stored in UTC; the user picks it in local time (no time zone is stored).
+  const tzHours = () => Math.round(-new Date().getTimezoneOffset() / 60);
+  const toLocal = utc => (utc + tzHours() + 48) % 24;
+  const toUtc = local => (local - tzHours() + 48) % 24;
+  async function setDigest(localHour) {
+    try {
+      state.me = await api('PUT', 'me', { digestHour: localHour === null ? -1 : toUtc(localHour) });
+    } catch (e) {
+      state.notice = errText(e.message);
+    }
+    render();
+  }
+
+  function digestPanel() {
+    const on = state.me.digestHour !== null && state.me.digestHour !== undefined;
+    const local = on ? toLocal(state.me.digestHour) : 7;
+    const fmt = hr => new Date(2000, 0, 1, hr).toLocaleTimeString(LOCALE[state.lang], { hour: '2-digit', minute: '2-digit' });
+    return h('section', { class: 'tr-panel' },
+      h('div', { class: 'tr-setting' },
+        h('div', {}, h('h2', {}, t('digestTitle')), h('p', { class: 'tr-muted' }, t('digestText', { source: SOURCE[state.source] }))),
+        switchControl(t('digestTitle'), on, v => setDigest(v ? local : null))),
+      on && h('label', { class: 'tr-digest-time' }, t('digestTime') + ' ',
+        h('select', { onchange: e => setDigest(Number(e.target.value)) },
+          Array.from({ length: 24 }, (_, hr) => h('option', { value: hr, selected: hr === local }, fmt(hr))))),
+      on && state.push !== 'on' && !state.me.notifyEmail && h('p', { class: 'tr-note' }, t('digestNeedsChannel')));
+  }
+
   function switchControl(label, checked, onchange, disabled) {
     return h('button', {
       type: 'button', role: 'switch', class: 'tr-switch', 'aria-checked': String(checked), 'aria-label': label,
@@ -714,6 +774,7 @@
         h('div', { class: 'tr-setting' },
           h('div', {}, h('h2', {}, t('emailTitle')), h('p', { class: 'tr-muted' }, t('emailText', { email: state.me.email }))),
           switchControl(t('emailTitle'), !!state.me.notifyEmail, setEmailAlerts))),
+      digestPanel(),
       state.notice && h('p', { class: 'tr-notice', role: 'status' }, state.notice),
       h('p', { class: 'tr-muted tr-follows' }, n ? t('follows', { n, source: SOURCE[state.source] }) : t('followsNone')));
   }
@@ -855,6 +916,14 @@
             title: t('followSource', { source: SOURCE[src] }) + (o.basis ? '\n' + t('basis') + ': ' + o.basis : ''),
           }, h('b', {}, SOURCE_SHORT[src]), ' ', label);
         })));
+      if (a.regions && a.regions.length) {
+        body.append(h('h3', {}, t('regionsTitle', { source: SOURCE_SHORT[state.source] })),
+          h('ul', { class: 'tr-regions' },
+            a.regions.map(r => h('li', { class: 'lv' + r.level }, h('b', {}, levelWord(r.level) + ': '), r.text)),
+            a.level && h('li', { class: 'lv' + a.level }, h('b', {}, levelWord(a.level) + ': '), t('restOfCountry'))));
+      }
+      const map = mapFor(iso, a);
+      if (map) body.append(mapFigure(iso, map));
       body.append(h('div', { class: 'tr-summary' },
         h('h3', {}, t('summary')),
         h('p', {}, a.summary || ''),
@@ -887,6 +956,41 @@
     }
     card.append(body);
     return card;
+  }
+
+  // The chosen government's map, else one from another government (UK, NL), only where parts of
+  // the country have other advice. Loaded on demand; the server keeps a copy (no third-party requests).
+  function mapFor(iso, a) {
+    if (!(a.maxLevel > a.level || a.regional || (a.regions && a.regions.length))) return null;
+    if (a.map) return { source: state.source, own: true };
+    const others = state.others[iso] || {};
+    const src = ['fcdo', 'buza'].find(x => others[x] && others[x].map);
+    return src ? { source: src, own: false } : null;
+  }
+
+  async function loadMap(iso, src) {
+    const key = src + ':' + iso;
+    state.maps[key] = { loading: true };
+    try {
+      state.maps[key] = await api('GET', 'map/' + src + '/' + iso);
+    } catch (e) {
+      state.maps[key] = { error: e.message };
+    }
+    render();
+  }
+
+  function mapFigure(iso, map) {
+    const key = map.source + ':' + iso;
+    const m = state.maps[key];
+    if (!m) { state.maps[key] = { loading: true }; setTimeout(() => loadMap(iso, map.source)); }
+    if (m && m.error) return null;
+    const caption = h('figcaption', { class: 'tr-muted tr-small-print' }, t('mapOf', { source: SOURCE[map.source] }), !map.own && [' ', t('mapOther')]);
+    if (!m || m.loading) return h('figure', { class: 'tr-map' }, h('div', { class: 'tr-map-ph' }, '…'), caption);
+    return h('figure', { class: 'tr-map' },
+      m.type === 'pdf'
+        ? h('a', { href: m.url, target: '_blank', rel: 'noopener' }, t('mapPdf'), ' ↗')
+        : h('a', { href: m.url, target: '_blank', rel: 'noopener' }, h('img', { src: m.url, alt: t('mapOf', { source: SOURCE[map.source] }), loading: 'lazy' })),
+      caption);
   }
 
   // Most common country-wide level across all governments (ties go to the stricter one) and the strictest.
@@ -931,9 +1035,69 @@
   }
 
   function goTab(id) {
-    state.tab = id; state.menuOpen = false; state.notice = '';
+    state.tab = tabIds().includes(id) ? id : 'countries'; state.menuOpen = false; state.notice = '';
+    if (state.tab === 'changes') loadChanges();
     render();
     window.scrollTo(0, 0);
+  }
+
+  // ---------------------------------------------------------------- worldwide changes
+  async function loadChanges() {
+    if (!state.changes || state.changes.error) state.changes = { loading: true };
+    render();
+    try {
+      state.changes = await api('GET', 'changes', null, state.changesAll ? { days: 7 } : { days: 7, source: state.source });
+    } catch (e) {
+      state.changes = { error: e.message };
+    }
+    render();
+  }
+
+  const levelWord = n => t('level')[n || 0];
+  function changeLine(c) {
+    if (c.kind === 'level') {
+      const [fl, fm] = c.from, [tl, tm] = c.to;
+      const text = fl === tl ? t('parts', { level: levelWord(fm) }) + ' → ' + levelWord(tm) : levelWord(fl) + ' → ' + levelWord(tl);
+      return h('span', { class: 'tr-chg-what lv' + Math.max(tl, tm) }, text);
+    }
+    if (c.kind === 'alert') {
+      return h('span', { class: 'tr-chg-what gd-' + c.level }, (t('alertLevel')[c.level] || '') + ': ' + c.note);
+    }
+    return h('span', { class: 'tr-chg-what' }, t('changeUpdated'));
+  }
+
+  function changesView() {
+    const c = state.changes || { loading: true };
+    const days = {};
+    (c.items || []).forEach(item => {
+      const day = new Date(item.time).toLocaleDateString(LOCALE[state.lang], { weekday: 'long', day: 'numeric', month: 'long' });
+      (days[day] = days[day] || []).push(item);
+    });
+    const building = c.since && Date.now() - new Date(c.since) < 36 * 3600e3;
+    return h('div', { class: 'tr-app' },
+      h('section', { class: 'tr-hero' },
+        h('h1', {}, t('changesTitle')),
+        h('p', { class: 'tr-lead' }, t('changesLead'))),
+      h('div', { class: 'tr-lang tr-src tr-chg-filter', role: 'group' },
+        h('button', { type: 'button', 'aria-pressed': String(!state.changesAll), onclick: () => { state.changesAll = false; loadChanges(); } }, t('changesMine', { source: SOURCE_SHORT[state.source] })),
+        h('button', { type: 'button', 'aria-pressed': String(state.changesAll), onclick: () => { state.changesAll = true; loadChanges(); } }, t('changesAll'))),
+      c.loading ? h('p', { class: 'tr-muted' }, '…')
+        : c.error ? h('p', { class: 'tr-error' }, errText(c.error))
+        : !c.items.length ? h('section', { class: 'tr-panel' }, h('p', { class: 'tr-muted' }, building ? t('changesBuilding') : t('changesNone')))
+        : Object.entries(days).map(([day, items]) => h('section', { class: 'tr-panel tr-chg-day' },
+          h('h2', {}, day),
+          h('ul', { class: 'tr-chg' }, items.map(item => {
+            const isos = item.countries.filter(byIso);
+            const one = isos.length === 1 && !state.selected.includes(isos[0]) ? isos[0] : null;
+            return h('li', {},
+              h('div', { class: 'tr-chg-head' },
+                h('b', {}, isos.map(cname).join(', ') || item.countries.join(', ')),
+                item.source && h('span', { class: 'tr-badge tr-src-badge', title: SOURCE[item.source] }, SOURCE_SHORT[item.source]),
+                one && h('button', { type: 'button', class: 'tr-ghost tr-small tr-follow', onclick: () => { add(one); render(); } }, '+ ' + t('follow'))),
+              changeLine(item),
+              item.kind !== 'alert' && item.note && h('p', { class: 'tr-muted tr-small-print' }, item.note),
+              item.kind === 'alert' && item.url && h('a', { href: item.url, target: '_blank', rel: 'noopener', class: 'tr-small-print' }, 'GDACS ↗'));
+          })))));
   }
 
   function sourcePicker() {
@@ -979,6 +1143,7 @@
       { id: 'welcome' },
       { id: 'search', sel: ['#tr-search'] },
       state.selected.length && { id: 'tile', sel: ['.tr-card'] },
+      { id: 'changes', sel: ['.tr-tabs-bottom [data-tab=changes]', '.tr-tabs-top [data-tab=changes]'] },
       state.me.loggedIn && { id: 'alerts', sel: ['.tr-tabs-bottom [data-tab=alerts]', '.tr-tabs-top [data-tab=alerts]'] },
       { id: 'settings', sel: ['.tr-tabs-bottom [data-tab=settings]', '.tr-tabs-top [data-tab=settings]'] },
       state.me.loggedIn && { id: 'account', sel: ['.tr-account > button'] },
@@ -1055,7 +1220,8 @@
     const main = state.view === 'loading' ? h('p', { class: 'tr-muted' }, t('signingIn'))
       : state.view !== 'app' ? authView()
       : state.tab === 'alerts' && state.me.loggedIn ? alertsView()
-      : state.tab === 'settings' ? settingsView() : appView();
+      : state.tab === 'settings' ? settingsView()
+      : state.tab === 'changes' ? changesView() : appView();
     root.classList.toggle('has-tabs', hasTabs());
     root.replaceChildren(...[
       topBar(),
@@ -1145,9 +1311,20 @@
     if (state.menuOpen && !e.target.closest('.tr-account')) { state.menuOpen = false; render(); }
   });
   // Sign-in link opened in the tab that already shows the app: only the hash changes.
-  window.addEventListener('hashchange', () => { if (/tr-login=/.test(location.hash)) location.reload(); });
+  window.addEventListener('hashchange', () => {
+    if (/tr-login=/.test(location.hash)) location.reload();
+    const tab = (location.hash.match(/tr-tab=(\w+)/) || [])[1];
+    if (tab && state.view === 'app') {
+      history.replaceState(null, '', location.pathname + location.search);
+      goTab(tab);
+    }
+  });
   if ('serviceWorker' in navigator && cfg.worker) {
     navigator.serviceWorker.register(cfg.worker, { scope: '/' }).catch(() => {});
+    // A tapped notification (daily overview) asks an already open app to show a tab.
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data && e.data.type === 'open-tab' && state.view === 'app') goTab(e.data.tab);
+    });
   }
 
   // ---------------------------------------------------------------- start
@@ -1203,8 +1380,14 @@
     if (wantGuide && state.view === 'app' && !store.get(KEY.tour)) guidePending = true;
     else if (wantGuide) setTimeout(() => { state.guide = true; render(); }, 1500);
 
+    const hashTab = (location.hash.match(/tr-tab=(\w+)/) || [])[1];
+    if (hashTab && state.view === 'app') {
+      history.replaceState(null, '', location.pathname + location.search);
+      goTab(hashTab);
+    }
+
     if (state.view === 'app') {
-      if (!store.get(KEY.tour)) setTimeout(startTour, 800);
+      if (!store.get(KEY.tour) && !hashTab) setTimeout(startTour, 800);
       if (state.me.loggedIn) detectPush();
       refreshAll();
       setInterval(refreshAll, 60 * 60 * 1000);

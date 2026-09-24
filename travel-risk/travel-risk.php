@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Terravue – Travel Risk Monitor
  * Description:       Official travel advice (NL, UK, DE, US, CA) and disaster alerts (GDACS) per country, as an installable web app. Place the shortcode [travel_risk] on a page.
- * Version:           0.10.0
+ * Version:           0.11.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Peter Langerak
@@ -14,7 +14,7 @@ namespace TravelRisk;
 
 defined( 'ABSPATH' ) || exit;
 
-const VERSION = '0.10.0';
+const VERSION = '0.11.0';
 const FILE    = __FILE__;
 const DIR     = __DIR__;
 
@@ -24,6 +24,8 @@ const LANGUAGES = array( 'en', 'de', 'nl' );
 require_once DIR . '/includes/Sources.php';
 require_once DIR . '/includes/News.php';
 require_once DIR . '/includes/Alerts.php';
+require_once DIR . '/includes/Maps.php';
+require_once DIR . '/includes/World.php';
 require_once DIR . '/includes/WebPush.php';
 require_once DIR . '/includes/Notify.php';
 require_once DIR . '/includes/Auth.php';
@@ -46,6 +48,7 @@ function defaults(): array {
 		'require_registration' => 1,
 		'news_provider'        => 'none', // official updates + GDACS first; GDELT/Google News are opt-in
 		'alerts'               => 1,      // GDACS disaster alerts
+		'digest_empty'         => 0,      // test aid: send the daily overview also when nothing changed
 		'cache_minutes'        => 60,
 		'news_hours'           => 48,
 		'app_page_id'          => 0,
@@ -172,6 +175,7 @@ function maybe_upgrade(): void {
 		}
 	}
 	delete_option( Notify::OPT_SNAPSHOT );
+	delete_option( World::OPT_STATE ); // world overview: new baseline; the log of past changes stays
 	update_option( 'travel_risk_version', VERSION, false );
 }
 add_action( 'init', __NAMESPACE__ . '\\maybe_upgrade', 5 );
@@ -194,6 +198,10 @@ function uninstall(): void {
 	delete_option( Notify::OPT_LAST );
 	delete_option( Notify::OPT_LAST_STATS );
 	delete_option( Notify::OPT_ALERTS_SEEN );
+	delete_option( World::OPT_STATE );
+	delete_option( World::OPT_LOG );
+	delete_option( World::OPT_ALERTS );
+	Maps::purge();
 	delete_option( 'travel_risk_gdelt_last' );
 	delete_option( 'travel_risk_version' );
 	Notify::unschedule();
@@ -203,5 +211,7 @@ function uninstall(): void {
 	delete_metadata( 'user', 0, Auth::META_LANG, '', true );
 	delete_metadata( 'user', 0, Auth::META_CONSENT, '', true );
 	delete_metadata( 'user', 0, Auth::META_SOURCE, '', true );
+	delete_metadata( 'user', 0, World::META_DIGEST, '', true );
+	delete_metadata( 'user', 0, World::META_DIGEST_SENT, '', true );
 	// Accounts themselves are ordinary WordPress users and are left in place on purpose.
 }

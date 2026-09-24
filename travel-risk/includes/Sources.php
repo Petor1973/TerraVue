@@ -6,10 +6,12 @@
  *   3 = essential travel only (orange)   4 = do not travel (red)
  *
  * Every adapter returns:
- *   [ source, level, maxLevel, basis, summary, url, updated, latest ]
+ *   [ source, level, maxLevel, basis, summary, url, updated, latest, regions, map ]
  * where `level` applies to most of the country and `maxLevel` is the strictest
  * level anywhere in the country (regional warnings). `latest` is the government's own
  * note on what changed in the last update, where the source publishes one (else null).
+ * `regions` lists regional advice as [level, text] in the source's language, and `map` is the
+ * government's own map ({url, type: image|pdf}) where the source links one (UK, NL), else null.
  *
  * No WordPress dependency: HTTP is injected as a callable
  *   fn(string $url): array{status:int, body:string}
@@ -58,6 +60,9 @@ class Sources {
 	);
 
 	/** Each government publishes no advice for its own country. */
+	/** Hosts the maps of the governments are served from; nothing else is downloaded. */
+	const MAP_HOSTS = array( 'gov.uk', 'nederlandwereldwijd.nl', 'rijksoverheid.nl' );
+
 	const HOME = array( 'buza' => 'NLD', 'fcdo' => 'GBR', 'aa' => 'DEU', 'usdos' => 'USA', 'gac' => 'CAN' );
 
 	/** Licence / attribution per source, shown in the app footer and the readme. */
@@ -141,7 +146,41 @@ class Sources {
 			'url'      => self::xml_field( $xml, 'canonical' ),
 			'updated'  => self::iso_date( self::xml_field( $xml, 'lastmodified' ) ),
 			'latest'   => self::after_label( self::text( str_replace( array( '<![CDATA[', ']]>' ), '', $xml ) ), '(?:Laatste wijziging|Wat is er veranderd\??)' ),
+			'regions'  => self::buza_regions( $intro ),
+			'map'      => self::buza_map( $xml ),
 		);
+	}
+
+	/** Colour sentences that name a region, with the strictest colour in the sentence. */
+	public static function buza_regions( string $text ): array {
+		$colours = array( 'groen' => 1, 'geel' => 2, 'oranje' => 3, 'rood' => 4 );
+		$out     = array();
+		foreach ( preg_split( '/(?<=[.!?])\s+/u', $text ) as $sentence ) {
+			if ( ! preg_match( '/kleurcode|reisadvies/iu', $sentence ) || ! preg_match_all( '/\b(groen|geel|oranje|rood)\b/iu', $sentence, $m )
+				|| preg_match( '/grootste deel|meeste gebieden|hele land|gehele land|rest van (het land|\p{Lu})|overige delen/iu', $sentence )
+				|| ! self::buza_is_regional( $sentence ) ) {
+				continue;
+			}
+			$out[] = array( 'level' => max( array_map( fn( $c ) => $colours[ mb_strtolower( $c ) ], $m[1] ) ), 'text' => self::clip( trim( $sentence ), 220 ) );
+		}
+		return self::regions( $out );
+	}
+
+	private static function buza_is_regional( string $sentence ): bool {
+		return (bool) preg_match( '/\b(voor|in|op|langs|rond|binnen|nabij)\s+(de|het|een)?\s*(\w+\s+)?(strook|gebied|gebieden|grens|regio|regio\'s|provincie|provincies|eiland|eilanden|noorden|zuiden|oosten|westen|noordoosten|noordwesten|zuidoosten|zuidwesten|deel|delen|stad|steden|kust|departement|departementen|staat|staten|district|districten)\b|\b\w*(strook|grens|grenzen|grensgebied|grensgebieden|grensstreek|grensregio|kilometer)\b|\btussen\s+\p{Lu}\w*\s+en\s+/iu', $sentence );
+	}
+
+	/** The colour-code map, if the XML links one (an image URL with "kaart" or "map" nearby). */
+	public static function buza_map( string $xml ): ?array {
+		if ( ! preg_match_all( '#https?://[^\s"\'<>]+?\.(?:png|jpe?g|gif|svg|webp)\b#i', $xml, $m, PREG_OFFSET_CAPTURE ) ) {
+			return null;
+		}
+		foreach ( $m[0] as list( $url, $pos ) ) {
+			if ( preg_match( '/kaart|map/i', $url . substr( $xml, max( 0, $pos - 60 ), 60 ) ) ) {
+				return array( 'url' => html_entity_decode( $url ), 'type' => 'image' );
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -226,9 +265,11 @@ class Sources {
 		$status   = (array) ( $data['details']['alert_status'] ?? array() );
 		$has      = fn( $s ) => in_array( $s, $status, true );
 		$warnings = '';
+		$html     = '';
 		foreach ( (array) ( $data['details']['parts'] ?? array() ) as $part ) {
 			if ( 'warnings-and-insurance' === ( $part['slug'] ?? '' ) ) {
-				$warnings = self::text( $part['body'] ?? '' );
+				$html     = (string) ( $part['body'] ?? '' );
+				$warnings = self::text( $html );
 			}
 		}
 
@@ -264,7 +305,21 @@ class Sources {
 			'updated'  => self::iso_date( $data['public_updated_at'] ?? null ),
 			// Usually "Latest update: ..."; the app shows its own label.
 			'latest'   => self::clip( preg_replace( '/^Latest update:?\s*/i', '', self::text( (string) ( $data['details']['change_description'] ?? '' ) ) ) ),
+			'regions'  => self::listed_regions( $html, array( '/advises? against all but essential travel to/i' => 3, '/advises? against all travel to/i' => 4 ) ),
+			'map'      => self::fcdo_map( (array) $data['details'] ),
 		);
+	}
+
+	/** GOV.UK travel advice carries the FCDO map as details.image (and a PDF as details.document). */
+	public static function fcdo_map( array $details ): ?array {
+		foreach ( array( 'image', 'document' ) as $key ) {
+			$file = $details[ $key ] ?? null;
+			if ( is_array( $file ) && ! empty( $file['url'] ) && is_string( $file['url'] ) ) {
+				$pdf = str_contains( strtolower( ( $file['content_type'] ?? '' ) . ' ' . $file['url'] ), 'pdf' );
+				return array( 'url' => $file['url'], 'type' => $pdf ? 'pdf' : 'image' );
+			}
+		}
+		return null;
 	}
 
 	// ------------------------------------------------------------------
@@ -343,6 +398,8 @@ class Sources {
 			'summary'  => self::shorten( $text ),
 			'url'      => 'https://www.auswaertiges-amt.de/de/ReiseUndSicherheit/reise-und-sicherheitshinweise',
 			'updated'  => is_numeric( $updated ) ? self::epoch( $updated ) : self::iso_date( $updated ),
+			'regions'  => self::regions( $phrase['regions'] ),
+			'map'      => null,
 			'latest'   => self::after_label( $text, 'Letzte Änderungen?' ),
 		);
 	}
@@ -354,10 +411,10 @@ class Sources {
 	 * nach X wird (dringend) abgeraten" = advise against travel (3). A sentence naming an area
 	 * (Gebiet, Grenze, Norden, Streifen, ...) only raises the regional maximum.
 	 *
-	 * @return array{level:int, max:int, sentence:string}
+	 * @return array{level:int, max:int, sentence:string, regions:array}
 	 */
 	public static function aa_phrases( string $text ): array {
-		$out      = array( 'level' => 0, 'max' => 0, 'sentence' => '' );
+		$out      = array( 'level' => 0, 'max' => 0, 'sentence' => '', 'regions' => array() );
 		$regional = '/gebiet|region|grenz|provinz|streifen|westjordanland|golan|norden|süden|osten|westen|nördlich|südlich|östlich|westlich|umgebung|bezirk|distrikt|umkreis|kilometer|\bkm\b|stadt|städte|insel/iu';
 		foreach ( preg_split( '/(?<=[.!?])\s+/u', $text ) as $sentence ) {
 			if ( preg_match( '/\bReisen\b.*\bwird\s+gewarnt\b/iu', $sentence ) ) {
@@ -368,6 +425,9 @@ class Sources {
 				continue;
 			}
 			$out['max'] = max( $out['max'], $step );
+			if ( preg_match( $regional, $sentence ) ) {
+				$out['regions'][] = array( 'level' => $step, 'text' => self::clip( trim( $sentence ), 220 ) );
+			}
 			if ( ! preg_match( $regional, $sentence ) && $step > $out['level'] ) {
 				$out['level']    = $step;
 				$out['sentence'] = mb_substr( trim( $sentence ), 0, 160 );
@@ -412,6 +472,8 @@ class Sources {
 				'url'      => $item['link'],
 				'updated'  => self::iso_date( $item['pubDate'] ),
 				'latest'   => self::usdos_latest( $text ),
+				'regions'  => self::listed_regions( $item['description'], array( '/do not travel to/i' => 4, '/reconsider travel to/i' => 3, '/exercise increased caution (in|to)/i' => 2 ), $country ),
+				'map'      => null,
 			);
 		}
 		throw new SourceException( 'not_found' );
@@ -452,6 +514,8 @@ class Sources {
 			'url'      => 'https://travel.gc.ca/destinations/' . ( $slug ?: '' ),
 			'updated'  => self::iso_date( $entry['date-published']['date'] ?? null ),
 			'latest'   => self::clip( self::text( (string) ( $eng['recent-updates'] ?? '' ) ) ),
+			'regions'  => array(), // Canada flags regional advisories but does not list them in the index
+			'map'      => null,
 		);
 	}
 
@@ -568,6 +632,66 @@ class Sources {
 		$cut = mb_substr( $text, 0, $max );
 		$end = mb_strrpos( $cut, '. ' );
 		return ( $end > $max / 2 ? mb_substr( $cut, 0, $end + 1 ) : $cut ) . ' …';
+	}
+
+	/**
+	 * Regions under headings such as "FCDO advises against all travel to:" or "Do Not Travel To:",
+	 * either as list items that follow or as the rest of the same sentence. The rest of the
+	 * country and the country itself (US "Do not travel to Iraq due to ...") are not regions.
+	 *
+	 * @param array<string,int> $modes Heading regex => level.
+	 * @return array<int,array{level:int,text:string}>
+	 */
+	public static function listed_regions( string $html, array $modes, array $country = array() ): array {
+		$names = array_filter( array_merge( array( $country['en'] ?? '' ), (array) ( $country['alt'] ?? array() ) ) );
+		$skip  = '/^(the\s+)?(rest|remainder|whole)\b' . ( $names ? '|^(' . implode( '|', array_map( fn( $n ) => preg_quote( $n, '/' ), $names ) ) . ')\b' : '' ) . '/i';
+		$out   = array();
+		$mode  = null;
+		preg_match_all( '/<(p|li|h[1-6])\b[^>]*>([\s\S]*?)<\/\1>/i', $html, $blocks, PREG_SET_ORDER );
+		if ( ! $blocks && '' !== trim( $html ) ) {
+			$blocks = array( array( '', 'p', $html ) ); // plain text
+		}
+		foreach ( $blocks as $block ) {
+			$text = self::text( $block[2] );
+			if ( '' === $text ) {
+				continue;
+			}
+			if ( 'li' === strtolower( $block[1] ) ) {
+				if ( $mode && ! preg_match( $skip, $text ) ) {
+					$out[] = array( 'level' => $mode, 'text' => self::clip( $text, 220 ) );
+				}
+				continue;
+			}
+			$mode = null;
+			foreach ( $modes as $re => $level ) {
+				if ( ! preg_match( $re, $text, $m, PREG_OFFSET_CAPTURE ) ) {
+					continue;
+				}
+				$rest = trim( (string) preg_split( '/(?<=[.!?])\s/u', substr( $text, $m[0][1] + strlen( $m[0][0] ) ) )[0], " :.\u{a0}" );
+				if ( '' === $rest ) {
+					$mode = $level; // the regions follow as a list
+				} elseif ( ! preg_match( $skip, $rest ) ) {
+					$out[] = array( 'level' => $level, 'text' => self::clip( ucfirst( $rest ), 220 ) );
+				}
+				break;
+			}
+		}
+		return self::regions( $out );
+	}
+
+	/** Strictest first, no duplicates, at most 12. */
+	private static function regions( array $list ): array {
+		$seen = array();
+		$out  = array();
+		foreach ( $list as $r ) {
+			$key = mb_strtolower( $r['text'] );
+			if ( ! isset( $seen[ $key ] ) ) {
+				$seen[ $key ] = true;
+				$out[]        = $r;
+			}
+		}
+		usort( $out, fn( $a, $b ) => $b['level'] <=> $a['level'] );
+		return array_slice( $out, 0, 12 );
 	}
 
 	/** Up to two sentences after a label such as "Latest update:" in plain text, or null. */

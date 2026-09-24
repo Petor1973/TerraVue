@@ -5,8 +5,10 @@
  *   GET    /advice/{ISO3}?source=   Travel advice from buza | fcdo | aa | usdos | gac (or ?lang= for its default source)
  *   GET    /news/{ISO3}             Recent security news (only when a news provider is on)
  *   GET    /alerts                  Current GDACS disaster alerts, all listed countries
+ *   GET    /map/{source}/{ISO3}     The government's own map (UK, NL), as a copy on this site
+ *   GET    /changes?days=&source=   Worldwide changes (advice levels, updates, disaster alerts)
  *   GET    /me                      Signed-in state, saved countries and language
- *   PUT    /me                      Save countries, language, advice source, e-mail notifications
+ *   PUT    /me                      Save countries, language, advice source, e-mail notifications, daily overview hour
  *   DELETE /me                      Delete own account and data
  *   POST   /login                   Request a sign-in link by e-mail
  *   POST   /login/verify            Exchange the link token or the 6-digit code for a session
@@ -50,6 +52,20 @@ class Rest {
 			'callback'            => array( self::class, 'news' ),
 			'permission_callback' => array( self::class, 'can_read' ),
 		) );
+		register_rest_route( self::NS, "/map/(?P<source>[a-z]+)/$iso", array(
+			'methods'             => 'GET',
+			'callback'            => array( self::class, 'map' ),
+			'permission_callback' => array( self::class, 'can_read' ),
+		) );
+		register_rest_route( self::NS, '/changes', array(
+			'methods'             => 'GET',
+			'callback'            => array( self::class, 'changes' ),
+			'permission_callback' => array( self::class, 'can_read' ),
+			'args'                => array(
+				'days'   => array( 'type' => 'integer', 'default' => 7, 'minimum' => 1, 'maximum' => World::KEEP_DAYS ),
+				'source' => array( 'type' => 'string', 'enum' => array_keys( Sources::NAMES ) ),
+			),
+		) );
 		register_rest_route( self::NS, '/alerts', array(
 			'methods'             => 'GET',
 			'callback'            => array( self::class, 'alerts' ),
@@ -70,6 +86,7 @@ class Rest {
 					'lang'        => array( 'type' => 'string', 'enum' => LANGUAGES ),
 					'notifyEmail' => array( 'type' => 'boolean' ),
 					'source'      => array( 'type' => 'string', 'enum' => array_keys( Sources::NAMES ) ),
+					'digestHour'  => array( 'type' => 'integer', 'minimum' => -1, 'maximum' => 23 ), // UTC; -1 = off
 				),
 			),
 			array(
@@ -172,6 +189,35 @@ class Rest {
 		return rest_ensure_response( $data + array( 'hours' => (int) setting( 'news_hours' ) ) );
 	}
 
+	public static function map( \WP_REST_Request $req ) {
+		$country = self::country( $req );
+		if ( is_wp_error( $country ) ) {
+			return $country;
+		}
+		$source = (string) $req['source'];
+		if ( ! Sources::valid( $source ) ) {
+			return new \WP_Error( 'no_map', 'no_map', array( 'status' => 404 ) );
+		}
+		try {
+			$advice = cached( "advice:$source:{$country['iso3']}", fn() => sources()->advice( $source, $country ) );
+		} catch ( SourceException $e ) {
+			return self::fail( $e );
+		}
+		if ( empty( $advice['map'] ) ) {
+			return new \WP_Error( 'no_map', 'no_map', array( 'status' => 404 ) );
+		}
+		$local = Maps::local( $advice['map'], $source, $country['iso3'] );
+		return is_wp_error( $local ) ? $local : rest_ensure_response( $local + array( 'source' => $source ) );
+	}
+
+	public static function changes( \WP_REST_Request $req ) {
+		return rest_ensure_response( array(
+			'items' => World::events( (int) $req['days'], $req['source'] ?: null ),
+			'since' => World::started(),
+			'pairs' => World::known(),
+		) );
+	}
+
 	public static function alerts() {
 		if ( ! setting( 'alerts' ) ) {
 			return new \WP_Error( 'alerts_disabled', 'alerts_disabled', array( 'status' => 404 ) );
@@ -231,6 +277,7 @@ class Rest {
 			'canDelete'            => ! current_user_can( 'edit_posts' ),
 			'notifyEmail'          => '1' === get_user_meta( $user->ID, Notify::META_EMAIL, true ),
 			'pushDevices'          => count( Notify::devices( $user->ID ) ),
+			'digestHour'           => '' === get_user_meta( $user->ID, World::META_DIGEST, true ) ? null : (int) get_user_meta( $user->ID, World::META_DIGEST, true ),
 		);
 	}
 
@@ -248,6 +295,14 @@ class Rest {
 		}
 		if ( null !== $req['source'] ) {
 			update_user_meta( $id, Auth::META_SOURCE, $req['source'] );
+		}
+		if ( null !== $req['digestHour'] ) {
+			if ( $req['digestHour'] < 0 ) {
+				delete_user_meta( $id, World::META_DIGEST );
+				delete_user_meta( $id, World::META_DIGEST_SENT );
+			} else {
+				update_user_meta( $id, World::META_DIGEST, (int) $req['digestHour'] );
+			}
 		}
 		if ( null !== $req['notifyEmail'] ) {
 			$req['notifyEmail'] ? update_user_meta( $id, Notify::META_EMAIL, '1' ) : delete_user_meta( $id, Notify::META_EMAIL );

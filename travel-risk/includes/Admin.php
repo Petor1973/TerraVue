@@ -33,6 +33,7 @@ class Admin {
 		add_action( 'admin_post_travel_risk_check_now', array( self::class, 'check_now' ) );
 		add_action( 'admin_post_travel_risk_test_change', array( self::class, 'test_change' ) );
 		add_action( 'admin_post_travel_risk_test_sources', array( self::class, 'test_sources' ) );
+		add_action( 'admin_post_travel_risk_test_digest', array( self::class, 'test_digest' ) );
 	}
 
 	public static function menu(): void {
@@ -80,6 +81,7 @@ class Admin {
 			'color_accent'         => sanitize_hex_color( $input['color_accent'] ?? '' ) ?: $d['color_accent'],
 			'require_registration' => empty( $input['require_registration'] ) ? 0 : 1,
 			'alerts'               => empty( $input['alerts'] ) ? 0 : 1,
+			'digest_empty'         => empty( $input['digest_empty'] ) ? 0 : 1,
 			'news_provider'        => in_array( $input['news_provider'] ?? '', array( 'gdelt', 'google', 'none' ), true ) ? $input['news_provider'] : $d['news_provider'],
 			'cache_minutes'        => min( 1440, max( 5, (int) ( $input['cache_minutes'] ?? $d['cache_minutes'] ) ) ),
 			'news_hours'           => min( 168, max( 12, (int) ( $input['news_hours'] ?? $d['news_hours'] ) ) ),
@@ -138,6 +140,13 @@ class Admin {
 						<td>
 							<label><input type="checkbox" name="<?php echo esc_attr( $name( 'alerts' ) ); ?>" value="1" <?php checked( $s['alerts'] ); ?>> Show GDACS disaster alerts (earthquakes, cyclones, floods, volcanoes, wildfires) per country, and notify followers of orange and red alerts</label>
 							<p class="description">Global Disaster Alert and Coordination System of the European Commission and the United Nations. One public feed, read every <?php echo (int) Alerts::CACHE_MINUTES; ?> minutes.</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Daily world overview</th>
+						<td>
+							<label><input type="checkbox" name="<?php echo esc_attr( $name( 'digest_empty' ) ); ?>" value="1" <?php checked( $s['digest_empty'] ); ?>> Also send the daily overview when nothing changed (for testing push and e-mail)</label>
+							<p class="description">Users choose in the app whether and at what time they get the overview.</p>
 						</td>
 					</tr>
 					<tr>
@@ -233,6 +242,18 @@ class Admin {
 		) );
 	}
 
+	/** Sends the daily world overview now to one account (own or given address), even if empty. */
+	public static function test_digest(): void {
+		self::guard( 'travel_risk_test_digest' );
+		$to   = sanitize_email( wp_unslash( $_POST['to'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification
+		$user = $to ? get_user_by( 'email', $to ) : wp_get_current_user();
+		if ( ! $user || ! $user->ID ) {
+			self::back( self::NOTIFICATIONS, 'No account with that e-mail address.' );
+		}
+		World::send_digests( $user->ID );
+		self::back( self::NOTIFICATIONS, sprintf( 'Daily overview sent to %s (all push devices of that account, and e-mail if it is on).', $user->user_email ) );
+	}
+
 	public static function notifications_page(): void {
 		$user    = get_current_user_id();
 		$devices = count( Notify::devices( $user ) );
@@ -263,6 +284,26 @@ class Admin {
 				<?php wp_nonce_field( 'travel_risk_check_now' ); ?>
 				<?php submit_button( 'Run the hourly check now', 'secondary', 'submit', false ); ?>
 				<span class="description">Fetches the advice for all followed countries and notifies users of real level changes.</span>
+			</form>
+
+			<h2>Daily world overview</h2>
+			<?php $started = World::started(); ?>
+			<p>Every hourly check also reads the advice of all governments for all countries (US and Canada in one go, NL, UK and DE <?php echo (int) World::PER_RUN; ?> per run) and logs changes; users see them under <strong>Changes</strong> in the app and can get a daily overview at a time they choose.</p>
+			<p>
+				Collecting since: <strong><?php echo $started ? esc_html( human_time_diff( strtotime( $started ) ) . ' ago' ) : 'not yet'; ?></strong>.
+				Source/country pairs with a reading: <strong><?php echo (int) World::known(); ?></strong>.
+				Changes in the last 7 days: <strong><?php echo count( World::events( 7 ) ); ?></strong>.
+				<?php if ( is_array( $stats ) && isset( $stats['world'] ) ) : ?>
+					Last run: <?php echo (int) $stats['world']; ?> changes logged, <?php echo (int) $stats['digests']; ?> overviews sent.
+				<?php endif; ?>
+			</p>
+			<p class="description">The first reading of each pair is a baseline, so changes appear from the second day on.</p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="travel_risk_test_digest">
+				<?php wp_nonce_field( 'travel_risk_test_digest' ); ?>
+				<label>To <input type="email" name="to" placeholder="<?php echo esc_attr( wp_get_current_user()->user_email ); ?>" class="regular-text"></label>
+				<?php submit_button( 'Send the daily overview now', 'secondary', 'submit', false ); ?>
+				<span class="description">Changes since that account's last overview (or the last 24 hours), also when there are none.</span>
 			</form>
 
 			<h2>Test notifications</h2>
@@ -302,7 +343,7 @@ class Admin {
 			$start = microtime( true );
 			try {
 				$a      = $fresh->advice( $id, $country );
-				$rows[] = array( 'id' => $id, 'level' => $a['level'], 'max' => $a['maxLevel'], 'regional' => ! empty( $a['regional'] ), 'basis' => $a['basis'] ?? '', 'latest' => $a['latest'] ?? '', 'updated' => $a['updated'] ?? '', 'url' => $a['url'] ?? '', 'error' => '' );
+				$rows[] = array( 'id' => $id, 'level' => $a['level'], 'max' => $a['maxLevel'], 'regional' => ! empty( $a['regional'] ), 'basis' => $a['basis'] ?? '', 'latest' => $a['latest'] ?? '', 'updated' => $a['updated'] ?? '', 'regions' => count( $a['regions'] ?? array() ), 'map' => $a['map'] ?? null, 'url' => $a['url'] ?? '', 'error' => '' );
 			} catch ( SourceException $e ) {
 				$rows[] = array( 'id' => $id, 'error' => $e->getMessage() . ( $e->detail ? ' — ' . $e->detail : '' ) );
 			} catch ( \Throwable $e ) {
@@ -364,18 +405,19 @@ class Admin {
 			<?php elseif ( is_array( $result ) ) : ?>
 				<h3><?php echo esc_html( $result['country']['en'] ); ?></h3>
 				<table class="widefat striped" style="max-width:1100px">
-					<thead><tr><th>Source</th><th>Level</th><th>Strictest in parts</th><th>Why this level</th><th>Latest update</th><th>Time</th></tr></thead>
+					<thead><tr><th>Source</th><th>Level</th><th>Strictest in parts</th><th>Why this level</th><th>Latest update</th><th>Regions / map</th><th>Time</th></tr></thead>
 					<tbody>
 					<?php foreach ( $result['rows'] as $r ) : ?>
 						<tr>
 							<td><?php echo esc_html( Sources::NAMES[ $r['id'] ] ); ?></td>
 							<?php if ( $r['error'] ) : ?>
-								<td colspan="4"><strong style="color:#b32d2e"><?php echo esc_html( $r['error'] ); ?></strong></td>
+								<td colspan="5"><strong style="color:#b32d2e"><?php echo esc_html( $r['error'] ); ?></strong></td>
 							<?php else : ?>
 								<td><?php echo esc_html( $levels[ (int) $r['level'] ] ); ?></td>
 								<td><?php echo esc_html( $r['max'] > $r['level'] ? $levels[ (int) $r['max'] ] : ( $r['regional'] ? 'regional warnings (no level)' : '—' ) ); ?></td>
 								<td><?php echo esc_html( $r['basis'] ); ?><?php if ( $r['url'] ) : ?> <a href="<?php echo esc_url( $r['url'] ); ?>" target="_blank" rel="noopener">official page</a><?php endif; ?></td>
 								<td><?php echo esc_html( trim( ( $r['updated'] ? substr( $r['updated'], 0, 10 ) . ' ' : '' ) . ( $r['latest'] ?: '—' ) ) ); ?></td>
+								<td><?php echo (int) $r['regions']; ?> regions<br>map: <?php echo $r['map'] ? '<a href="' . esc_url( $r['map']['url'] ) . '" target="_blank" rel="noopener">' . esc_html( $r['map']['type'] ) . '</a>' : 'no'; ?></td>
 							<?php endif; ?>
 							<td><?php echo (int) $r['ms']; ?> ms</td>
 						</tr>

@@ -137,6 +137,24 @@ ok( 'alerts: feed cached', false !== get_transient( 'travel_risk_' . md5( 'alert
 update_option( 'travel_risk_settings', array( 'alerts' => 0 ) + (array) $settings );
 ok( 'alerts: can be switched off', 404 === call( 'GET', 'alerts' )->get_status() );
 update_option( 'travel_risk_settings', array( 'alerts' => 1 ) + (array) $settings );
+// regional advice and the government's map (served from this site)
+$d = call( 'GET', 'advice/SAU', array( 'source' => 'fcdo' ) )->get_data();
+ok( 'regions: fcdo list items', array( array( 'level' => 3, 'text' => 'within 10km of the border with Yemen' ), array( 'level' => 3, 'text' => 'the city of Abha and Abha airport' ) ) === $d['regions'], $d['regions'] ?? null );
+ok( 'map: fcdo image url in advice', 'image' === ( $d['map']['type'] ?? '' ), $d['map'] ?? null );
+$r   = call( 'GET', 'map/fcdo/SAU' );
+$map = $r->get_data();
+$up  = wp_upload_dir();
+$loc = isset( $map['url'] ) ? str_replace( $up['baseurl'], $up['basedir'], $map['url'] ) : '';
+ok( 'map: copied to this site, a real PNG', 200 === $r->get_status() && str_starts_with( $map['url'], $up['baseurl'] . '/travel-risk-maps/fcdo-sau-' ) && str_ends_with( $map['url'], '.png' ) && false !== @getimagesize( $loc ), $map );
+$GLOBALS['travel_risk_map_fetches'] = 0;
+$count = function ( $pre, $args, $url ) { if ( str_contains( $url, 'publishing.service.gov.uk' ) ) { $GLOBALS['travel_risk_map_fetches']++; } return $pre; };
+add_filter( 'pre_http_request', $count, 1, 3 );
+ok( 'map: second request uses the copy', $map === call( 'GET', 'map/fcdo/SAU' )->get_data() && 0 === $GLOBALS['travel_risk_map_fetches'] );
+remove_filter( 'pre_http_request', $count, 1 );
+ok( 'map: none for the US', 404 === call( 'GET', 'map/usdos/SAU' )->get_status() );
+ok( 'map: other hosts refused', is_wp_error( TravelRisk\Maps::local( array( 'url' => 'https://evil.example/map.png', 'type' => 'image' ), 'fcdo', 'SAU' ) ) );
+ok( 'map: plain http refused', is_wp_error( TravelRisk\Maps::local( array( 'url' => 'http://assets.publishing.service.gov.uk/media/test/x.png', 'type' => 'image' ), 'fcdo', 'SAU' ) ) );
+
 ok( 'advice carries the latest-update field', array_key_exists( 'latest', call( 'GET', 'advice/SAU', array( 'source' => 'usdos' ) )->get_data() ) );
 
 // PWA
@@ -233,6 +251,43 @@ $stats = TravelRisk\Notify::check( false );
 ok( 'alerts: no repeat for the same event and level', 0 === $stats['alerts'] && ! $GLOBALS['travel_risk_pushes'], $stats );
 unset( $GLOBALS['travel_risk_gdacs_level'] );
 delete_transient( 'travel_risk_' . md5( 'alerts:gdacs' ) );
+
+// world overview: baseline, a change is logged, the daily digest goes out once
+delete_option( TravelRisk\World::OPT_STATE );
+delete_option( TravelRisk\World::OPT_LOG );
+$w = TravelRisk\World::collect( array( 'SAU', 'NOR' ), true );
+ok( 'world: first reading is a baseline', 0 === $w['events'] && TravelRisk\World::known() >= 8, array( $w, TravelRisk\World::known() ) );
+$raise_world = function ( $pre, $args, $url ) {
+	if ( ! str_contains( $url, 'foreign-travel-advice/norway' ) ) {
+		return $pre;
+	}
+	$body = wp_json_encode( array( 'description' => 'Norway', 'public_updated_at' => '2026-09-24T09:00:00Z', 'details' => array( 'alert_status' => array( 'avoid_all_but_essential_travel_to_whole_country' ), 'change_description' => 'Latest update: storms.', 'parts' => array() ) ) );
+	return array( 'headers' => array(), 'body' => $body, 'response' => array( 'code' => 200, 'message' => 'OK' ), 'cookies' => array(), 'filename' => null );
+};
+add_filter( 'pre_http_request', $raise_world, 6, 3 );
+delete_transient( 'travel_risk_' . md5( 'advice:fcdo:NOR' ) );
+$w = TravelRisk\World::collect( array( 'SAU', 'NOR' ), true );
+remove_filter( 'pre_http_request', $raise_world, 6 );
+delete_transient( 'travel_risk_' . md5( 'advice:fcdo:NOR' ) );
+$items = call( 'GET', 'changes', array( 'source' => 'fcdo' ) )->get_data()['items'];
+ok( 'world: level change logged with the note', 1 === $w['events'] && 'level' === $items[0]['kind'] && array( 'NOR' ) === $items[0]['countries'] && array( 1, 1 ) === $items[0]['from'] && array( 3, 3 ) === $items[0]['to'] && 'storms.' === $items[0]['note'], array( $w, $items ) );
+ok( 'world: filter by source', array() === call( 'GET', 'changes', array( 'source' => 'aa' ) )->get_data()['items'] );
+
+ok( 'digest: hour saved (UTC) and shown', 5 === call( 'PUT', 'me', array( 'digestHour' => 5 ) )->get_data()['digestHour'] );
+update_user_meta( $user->ID, TravelRisk\World::META_DIGEST, (int) gmdate( 'G' ) );
+delete_user_meta( $user->ID, TravelRisk\World::META_DIGEST_SENT );
+$GLOBALS['travel_risk_pushes'] = array();
+@unlink( WP_CONTENT_DIR . '/mail-log.txt' );
+ok( 'digest: sent at the chosen hour', 1 === TravelRisk\World::send_digests() );
+$mail = '';
+foreach ( explode( "\n-----\n", (string) @file_get_contents( WP_CONTENT_DIR . '/mail-log.txt' ) ) as $m ) {
+	$mail = str_starts_with( $m, $email ) ? $m : $mail;
+}
+ok( 'digest: push and e-mail (NL) with the change', 1 === count( array_filter( $GLOBALS['travel_risk_pushes'], fn( $p ) => str_contains( $p['url'], 'device-1' ) ) ) && str_contains( $mail, 'Wereldoverzicht: 1 wijziging' ) && str_contains( $mail, 'Noorwegen: Normale voorzorg → Alleen noodzakelijke reizen — storms.' ) && str_contains( $mail, 'tr-tab=changes' ), $mail );
+ok( 'digest: not twice on the same day', 0 === TravelRisk\World::send_digests() );
+$msg = TravelRisk\World::message( 'en', array(), 'fcdo' );
+ok( 'digest: empty overview text', 'World overview: no changes' === $msg['title'] && str_contains( $msg['body'], 'No changes in the travel advice of' ) );
+ok( 'digest: export and switch off', str_contains( wp_json_encode( TravelRisk\Privacy::export( $email ) ), 'Daily world overview' ) && null === call( 'PUT', 'me', array( 'digestHour' => -1 ) )->get_data()['digestHour'] );
 
 $msg = TravelRisk\Notify::message( 'de', TravelRisk\countries()['SAU'], array( 'level' => 2, 'maxLevel' => 2 ), array( 'level' => 2, 'maxLevel' => 4 ) );
 ok( 'message for regional change (DE)', 'Reisehinweis geändert: Saudi-Arabien' === $msg['title'] && str_contains( $msg['body'], 'Erhöhte Vorsicht (max) → Reisewarnung (max)' ), $msg );

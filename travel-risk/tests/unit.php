@@ -353,6 +353,33 @@ check( 'latest: none in plain text', Sources::after_label( 'Nothing to see here.
 check( 'aa: lastModified in seconds (live API)', Sources::parse_aa( json_encode( array( 'response' => array( '9' => array( 'lastModified' => 1757318400 ) ) ) ), '9' )['updated'], '2025-09-08T08:00:00+00:00' );
 check( 'aa: lastModified in milliseconds (documented)', Sources::parse_aa( json_encode( array( 'response' => array( '9' => array( 'lastModified' => 1757318400000 ) ) ) ), '9' )['updated'], '2025-09-08T08:00:00+00:00' );
 
+
+// ---------------------------------------------------------------- regional advice lists and maps
+$fcdo_html = '<p>FCDO advises against all travel to:</p><ul><li>Gaza</li><li>within 500m of the border with Lebanon</li></ul>'
+	. '<p>FCDO advises against all but essential travel to:</p><ul><li>the West Bank</li></ul>'
+	. '<p>FCDO advises against all travel to within 10km of the border with Syria.</p><p>Some other paragraph.</p><ul><li>not a region</li></ul>';
+$r = Sources::parse_fcdo( json_encode( array( 'details' => array( 'alert_status' => array( 'avoid_all_travel_to_parts' ), 'parts' => array( array( 'slug' => 'warnings-and-insurance', 'body' => $fcdo_html ) ), 'image' => array( 'url' => 'https://assets.publishing.service.gov.uk/media/x/israel.png', 'content_type' => 'image/png' ), 'document' => array( 'url' => 'https://assets.publishing.service.gov.uk/media/x/israel.pdf' ) ) ) ), 'israel' );
+check( 'regions: fcdo lists and sentence, strictest first', $r['regions'], array(
+	array( 'level' => 4, 'text' => 'Gaza' ),
+	array( 'level' => 4, 'text' => 'within 500m of the border with Lebanon' ),
+	array( 'level' => 4, 'text' => 'Within 10km of the border with Syria' ),
+	array( 'level' => 3, 'text' => 'the West Bank' ),
+) );
+check( 'map: fcdo image preferred over pdf', $r['map'], array( 'url' => 'https://assets.publishing.service.gov.uk/media/x/israel.png', 'type' => 'image' ) );
+check( 'map: fcdo pdf when no image', Sources::fcdo_map( array( 'document' => array( 'url' => 'https://assets.publishing.service.gov.uk/m.pdf', 'content_type' => 'application/pdf' ) ) ), array( 'url' => 'https://assets.publishing.service.gov.uk/m.pdf', 'type' => 'pdf' ) );
+check( 'map: fcdo none', Sources::fcdo_map( array() ), null );
+check( 'regions: "rest of the country" is not a region', Sources::listed_regions( '<p>FCDO advises against all but essential travel to the rest of Ukraine.</p>', array( '/advises? against all but essential travel to/i' => 3 ) ), array() );
+$iraq = array( 'iso3' => 'IRQ', 'en' => 'Iraq' );
+check( 'regions: us "Do not travel to <country>" is national', Sources::listed_regions( '<p>Do not travel to Iraq due to terrorism.</p>', array( '/do not travel to/i' => 4 ), $iraq ), array() );
+check( 'regions: us listed areas', Sources::listed_regions( '<p><b>Do Not Travel To:</b></p><ul><li>Gaza due to terrorism</li></ul><p><b>Reconsider Travel To:</b></p><ul><li>the West Bank</li></ul>', array( '/do not travel to/i' => 4, '/reconsider travel to/i' => 3 ), array( 'en' => 'Israel' ) ),
+	array( array( 'level' => 4, 'text' => 'Gaza due to terrorism' ), array( 'level' => 3, 'text' => 'the West Bank' ) ) );
+check( 'regions: buza regional sentences only', Sources::buza_regions( 'De kleurcode van het reisadvies is rood voor de grensgebieden tussen Israël en Gaza, Libanon en Egypte. Voor de Westelijke Jordaanoever is de kleurcode oranje in de gebieden rond Jenin. Per 8 september geldt kleurcode geel voor het grootste deel van Israël.' ),
+	array( array( 'level' => 4, 'text' => 'De kleurcode van het reisadvies is rood voor de grensgebieden tussen Israël en Gaza, Libanon en Egypte.' ), array( 'level' => 3, 'text' => 'Voor de Westelijke Jordaanoever is de kleurcode oranje in de gebieden rond Jenin.' ) ) );
+check( 'map: buza image near "kaart"', Sources::buza_map( '<d><kaart><url>https://www.nederlandwereldwijd.nl/binaries/kaart-israel.png</url></kaart><foto>https://www.nederlandwereldwijd.nl/binaries/strand.jpg</foto></d>' ), array( 'url' => 'https://www.nederlandwereldwijd.nl/binaries/kaart-israel.png', 'type' => 'image' ) );
+check( 'map: buza none', Sources::buza_map( '<d><foto>https://www.nederlandwereldwijd.nl/binaries/strand.jpg</foto></d>' ), null );
+$aa_reg = json_encode( array( 'response' => array( '7' => array( 'content' => '<p>Von Reisen in den Gazastreifen wird dringend abgeraten. Vor Reisen in die Grenzgebiete zu Libanon wird gewarnt.</p>' ) ) ) );
+check( 'regions: aa regional sentences', Sources::parse_aa( $aa_reg, '7' )['regions'], array( array( 'level' => 4, 'text' => 'Vor Reisen in die Grenzgebiete zu Libanon wird gewarnt.' ), array( 'level' => 3, 'text' => 'Von Reisen in den Gazastreifen wird dringend abgeraten.' ) ) );
+
 // ---------------------------------------------------------------- GDACS disaster alerts
 $now   = 1790000000;
 $when  = fn( $s ) => gmdate( 'D, d M Y H:i:s \G\M\T', $now - $s );

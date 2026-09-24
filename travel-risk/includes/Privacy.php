@@ -43,6 +43,8 @@ class Privacy {
 			array( 'name' => 'Travel advice source', 'value' => (string) get_user_meta( $user->ID, Auth::META_SOURCE, true ) ),
 			array( 'name' => 'Consent given at', 'value' => (string) get_user_meta( $user->ID, Auth::META_CONSENT, true ) ),
 			array( 'name' => 'E-mail notifications', 'value' => '1' === get_user_meta( $user->ID, Notify::META_EMAIL, true ) ? 'on' : 'off' ),
+			array( 'name' => 'Daily world overview (hour, UTC)', 'value' => '' === get_user_meta( $user->ID, World::META_DIGEST, true ) ? 'off' : (string) get_user_meta( $user->ID, World::META_DIGEST, true ) ),
+			array( 'name' => 'Last daily overview sent at', 'value' => get_user_meta( $user->ID, World::META_DIGEST_SENT, true ) ? gmdate( 'c', (int) get_user_meta( $user->ID, World::META_DIGEST_SENT, true ) ) : '' ),
 			array(
 				'name'  => 'Devices with push notifications',
 				'value' => implode( "\n", array_map( fn( $d ) => wp_parse_url( $d['endpoint'], PHP_URL_HOST ) . ' (since ' . $d['created'] . ')', Notify::devices( $user->ID ) ) ),
@@ -65,7 +67,7 @@ class Privacy {
 		$user    = get_user_by( 'email', $email );
 		$removed = false;
 		if ( $user ) {
-			foreach ( array( Auth::META_COUNTRIES, Auth::META_LANG, Auth::META_CONSENT, Auth::META_SOURCE, Notify::META_PUSH, Notify::META_EMAIL ) as $key ) {
+			foreach ( array( Auth::META_COUNTRIES, Auth::META_LANG, Auth::META_CONSENT, Auth::META_SOURCE, Notify::META_PUSH, Notify::META_EMAIL, World::META_DIGEST, World::META_DIGEST_SENT ) as $key ) {
 				$removed = delete_user_meta( $user->ID, $key ) || $removed;
 			}
 		}
@@ -86,7 +88,7 @@ class Privacy {
 			$brand,
 			"<p>To use $brand you register once with your e-mail address. You receive a sign-in link; your account is only created after you open it (double opt-in). We store your e-mail address, the date of your consent, the countries you add and your language preference, only to provide the service. Legal basis: your consent (Art. 6(1)(a) GDPR). You can delete your account and all related data at any time from within the app.</p>"
 			. "<p>To show travel advice and news, the server requests public data from the travel advice services of the governments of the Netherlands, the United Kingdom, Germany, the United States and Canada, the public disaster alert feed of GDACS (European Commission and United Nations) and, if enabled, a news service. Only country names or codes are sent to these services, never your personal data.</p>"
-			. "<p>Notifications are optional and off by default. If you turn on push notifications, we store the push address and encryption keys your browser gives us for that device, and send messages through your browser's push service (Google, Mozilla, Apple or Microsoft); the message content is end-to-end encrypted. If you turn on e-mail notifications, we store that choice. Turning notifications off, signing out on a device or deleting your account removes this data. We check the official advice and disaster alerts hourly for the countries you follow.</p>"
+			. "<p>Notifications are optional and off by default. If you turn on push notifications, we store the push address and encryption keys your browser gives us for that device, and send messages through your browser's push service (Google, Mozilla, Apple or Microsoft); the message content is end-to-end encrypted. If you turn on e-mail notifications, we store that choice. Turning notifications off, signing out on a device or deleting your account removes this data. We check the official advice and disaster alerts hourly for the countries you follow. If you turn on the daily world overview, we store the hour you chose (in UTC, no time zone or location) and when the last overview was sent.</p>"
 			. '<p>The app stores your chosen countries and language on your device (local storage) so it works offline. Signing out clears cached data.</p>'
 		);
 	}

@@ -6,7 +6,7 @@
 add_filter('pre_http_request', function ($pre, $args, $url) {
   if ($pre !== false) return $pre; // a test already supplied an answer
   $ok = fn($body) => ['headers'=>[], 'body'=>$body, 'response'=>['code'=>200,'message'=>'OK'], 'cookies'=>[], 'filename'=>null];
-  if (str_contains($url, 'gov.uk/api/content/foreign-travel-advice/saudi-arabia')) return $ok(json_encode(['description'=>'Saudi','public_updated_at'=>'2026-09-20T08:00:00Z','details'=>['alert_status'=>['avoid_all_but_essential_travel_to_parts'],'change_description'=>'Latest update: information on drone attacks near the Yemen border updated (Safety and security section).','parts'=>[['slug'=>'warnings-and-insurance','body'=>'<p>FCDO advises against all but essential travel to within 10km of the border with Yemen.</p>']]]]));
+  if (str_contains($url, 'gov.uk/api/content/foreign-travel-advice/saudi-arabia')) return $ok(json_encode(['description'=>'Saudi','public_updated_at'=>'2026-09-20T08:00:00Z','details'=>['alert_status'=>['avoid_all_but_essential_travel_to_parts'],'change_description'=>'Latest update: information on drone attacks near the Yemen border updated (Safety and security section).','image'=>['url'=>'https://assets.publishing.service.gov.uk/media/test/saudi-arabia-map.png','content_type'=>'image/png'],'parts'=>[['slug'=>'warnings-and-insurance','body'=>'<p>FCDO advises against all but essential travel to:</p><ul><li>within 10km of the border with Yemen</li><li>the city of Abha and Abha airport</li></ul>']]]]));
   if (str_contains($url, 'gov.uk/api/content/foreign-travel-advice/norway')) return $ok(json_encode(['description'=>'Norway','public_updated_at'=>'2026-08-01T08:00:00Z','details'=>['alert_status'=>[],'parts'=>[['slug'=>'warnings-and-insurance','body'=>'<p>No specific warnings.</p>']]]]));
   if (str_contains($url, 'gov.uk/api/content/foreign-travel-advice/iraq')) return $ok(json_encode(['description'=>'Iraq','public_updated_at'=>'2026-09-22T08:00:00Z','details'=>['alert_status'=>['avoid_all_travel_to_whole_country'],'parts'=>[['slug'=>'warnings-and-insurance','body'=>'<p>FCDO advises against all travel to Iraq.</p>']]]]));
   if (preg_match('#auswaertiges-amt.de/opendata/travelwarning$#', $url)) return $ok(json_encode(['response'=>['1'=>['iso3CountryCode'=>'SAU'],'2'=>['iso3CountryCode'=>'NOR'],'3'=>['iso3CountryCode'=>'IRQ']]]));
@@ -22,6 +22,7 @@ add_filter('pre_http_request', function ($pre, $args, $url) {
     'NO' => ['advisory-state' => 0, 'has-regional-advisory' => 0, 'eng' => ['url-slug' => 'norway', 'advisory-text' => 'Take normal security precautions']],
     'IQ' => ['advisory-state' => 3, 'has-regional-advisory' => 0, 'eng' => ['url-slug' => 'iraq', 'advisory-text' => 'Avoid all travel']],
   ]]));
+  if (str_contains($url, 'assets.publishing.service.gov.uk/media/test/')) return ['headers'=>['content-type'=>'image/png'], 'body'=>travel_risk_fake_png(), 'response'=>['code'=>200,'message'=>'OK'], 'cookies'=>[], 'filename'=>null];
   if (str_contains($url, 'gdacs.org/xml/rss.xml')) return $ok(travel_risk_fake_gdacs());
   if (str_contains($url, 'gdeltproject')) return $ok(json_encode(['articles'=>[['title'=>'Drone intercepted over eastern province','url'=>'https://example.com/1','domain'=>'example.com','seendate'=>gmdate('Ymd\THis\Z', time()-7200)],['title'=>'Protest reported in capital','url'=>'https://example.com/2','domain'=>'news.example','seendate'=>gmdate('Ymd\THis\Z', time()-20000)]]]));
   return $pre;
@@ -44,4 +45,13 @@ function travel_risk_fake_gdacs(): string {
     .$item("$sau earthquake alert (Magnitude 6.2M, Depth:10km) in Saudi Arabia", 'EQ', '9001', $sau, 'SAU', 'Saudi Arabia', 3 * 3600)
     .$item('Green earthquake alert (Magnitude 4.8M, Depth:10km) in Norway', 'EQ', '9002', 'Green', 'NOR', 'Norway', 2 * 3600)
     .'</channel></rss>';
+}
+
+/** A small map-like PNG (country in yellow, a red border strip), made with GD. */
+function travel_risk_fake_png(): string {
+  $im = imagecreatetruecolor(360, 240);
+  imagefill($im, 0, 0, imagecolorallocate($im, 205, 225, 240));
+  imagefilledpolygon($im, [40, 40, 300, 30, 330, 200, 60, 215], imagecolorallocate($im, 227, 180, 0));
+  imagefilledpolygon($im, [60, 195, 330, 180, 330, 200, 60, 215], imagecolorallocate($im, 198, 40, 40));
+  ob_start(); imagepng($im); return (string) ob_get_clean();
 }

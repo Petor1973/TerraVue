@@ -79,17 +79,22 @@ self.addEventListener('push', event => {
     renotify: Boolean(msg.tag),
     icon: CONFIG.assets + 'icons/icon-192.png',
     badge: CONFIG.assets + 'icons/icon-192.png',
-    data: { url: msg.url || CONFIG.shell[1] || CONFIG.app },
+    data: { url: msg.url || CONFIG.shell[1] || CONFIG.app, tab: msg.tab || null },
   }));
 });
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const url = event.notification.data && event.notification.data.url;
+  const tab = event.notification.data && event.notification.data.tab;
   event.waitUntil((async () => {
     const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const app = open.find(c => isApp(new URL(c.url)));
-    if (app) { await app.focus(); return; }
+    if (app) {
+      await app.focus();
+      if (tab) app.postMessage({ type: 'open-tab', tab });
+      return;
+    }
     if (url) await self.clients.openWindow(url);
   })());
 });

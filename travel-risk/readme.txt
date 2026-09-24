@@ -1,7 +1,7 @@
 === Terravue – Travel Risk Monitor ===
 Requires at least: 6.4
 Requires PHP: 8.0
-Stable tag: 0.10.0
+Stable tag: 0.11.0
 License: Proprietary
 
 Official travel advice and disaster alerts per country, as an installable web app (PWA).
@@ -15,7 +15,13 @@ Users pick the countries they care about and see, per country:
 * the government's own note on its latest update, where the source publishes one;
 * current disaster alerts from GDACS (earthquakes, cyclones, floods, volcanoes, wildfires), with a badge
   on the country tile for orange and red alerts;
+* where parts of the country have stricter advice: a list of those regions with their level, and the
+  government's own map (UK, NL), served as a copy from this site;
 * optionally, recent security-related news (GDELT; off by default).
+
+Changes: a tab with all changes in the travel advice worldwide (levels, updates) and new orange/red
+disaster alerts of the last 7 days, and an optional daily world overview by push and/or e-mail at a
+time each user chooses.
 
 Users choose whose government advice they follow (usually their nationality or employer): the
 Netherlands, the United Kingdom, Germany, the United States or Canada. This is

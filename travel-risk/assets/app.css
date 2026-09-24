@@ -322,3 +322,32 @@ body.trisk-standalone .trisk { border-radius: 0; min-height: 100vh; padding-bott
 body.trisk-standalone .trisk .tr-top { padding-top: calc(12px + env(safe-area-inset-top)); }
 
 @media (prefers-reduced-motion: reduce) { .trisk .tr-chev, .trisk .tr-switch, .trisk .tr-switch span, .trisk .tr-tabs-bottom button { transition: none; } .trisk .tr-sheet { animation: none; } }
+
+/* settings tab */
+.trisk .tr-panel > h2 { font-size: 1.05rem; font-weight: 700; }
+.trisk .tr-panel .tr-sources { margin: 0; }
+.trisk .tr-credits { margin: 0; padding-left: 18px; font-size: .85rem; color: var(--tr-muted); display: grid; gap: 4px; }
+.trisk .tr-about-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.trisk .tr-link { border: 0; background: none; padding: 0; min-height: 0; font: inherit; color: var(--tr-primary); text-decoration: underline; cursor: pointer; }
+.trisk .tr-menu-version { padding: 8px 10px 2px; margin-top: 4px; border-top: 1px solid var(--tr-line); color: var(--tr-muted); font-size: .78rem; }
+
+/* interactive tour: a spotlight on one element and a bubble next to it */
+.trisk .tr-tour { position: fixed; inset: 0; z-index: 60; }
+.trisk .tr-tour-spot {
+  position: fixed; border-radius: 16px; pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(16, 33, 43, .58), 0 0 0 3px var(--tr-accent);
+  transition: top .2s, left .2s, width .2s, height .2s;
+}
+.trisk .tr-tour-bubble {
+  position: fixed; background: var(--tr-surface); border-radius: 18px; padding: 16px 16px 12px;
+  box-shadow: 0 18px 50px rgba(16, 33, 43, .3), 0 2px 6px rgba(16, 33, 43, .12);
+}
+.trisk .tr-tour.is-center { display: flex; align-items: center; justify-content: center; background: rgba(16, 33, 43, .58); padding: 16px; }
+.trisk .tr-tour.is-center .tr-tour-spot { display: none; }
+.trisk .tr-tour.is-center .tr-tour-bubble { position: static; width: min(100%, 380px); }
+.trisk .tr-tour-step { color: var(--tr-accent); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.trisk .tr-tour-bubble h2 { font-size: 1.1rem; font-weight: 700; margin: 4px 0 6px; color: var(--tr-primary); }
+.trisk .tr-tour-bubble p:not(.tr-tour-step) { font-size: .95rem; }
+.trisk .tr-tour-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 12px; }
+.trisk .tr-tour-skip { margin-right: auto; color: var(--tr-muted); }
+@media (prefers-reduced-motion: reduce) { .trisk .tr-tour-spot { transition: none; } }

@@ -14,7 +14,6 @@
  *   GET    /push/key                VAPID public key for PushManager.subscribe()
  *   POST   /push                    Register this device for push notifications
  *   DELETE /push                    Remove this device
- *   POST   /push/test               Send a test notification to the user's devices
  *
  * Error responses carry a short code (e.g. "rate_limited") that the app translates.
  */
@@ -117,11 +116,6 @@ class Rest {
 				'permission_callback' => 'is_user_logged_in',
 				'args'                => array( 'endpoint' => array( 'type' => 'string', 'required' => true ) ),
 			),
-		) );
-		register_rest_route( self::NS, '/push/test', array(
-			'methods'             => 'POST',
-			'callback'            => array( self::class, 'push_test' ),
-			'permission_callback' => 'is_user_logged_in',
 		) );
 		register_rest_route( self::NS, '/logout', array(
 			'methods'             => 'POST',
@@ -310,16 +304,6 @@ class Rest {
 	public static function push_remove( \WP_REST_Request $req ) {
 		Notify::remove_device( get_current_user_id(), (string) $req['endpoint'] );
 		return self::me();
-	}
-
-	public static function push_test() {
-		$lang = language( get_user_meta( get_current_user_id(), Auth::META_LANG, true ) );
-		$text = array(
-			'en' => array( 'Notifications are working', 'You will get a message here when the travel advice for one of your countries changes.' ),
-			'de' => array( 'Benachrichtigungen funktionieren', 'Sie erhalten hier eine Nachricht, wenn sich der Reisehinweis für eines Ihrer Länder ändert.' ),
-			'nl' => array( 'Meldingen werken', 'Je krijgt hier een bericht als het reisadvies voor een van je landen wijzigt.' ),
-		)[ $lang ];
-		return Notify::push_user( get_current_user_id(), array( 'title' => $text[0], 'body' => $text[1], 'tag' => 'test' ) );
 	}
 
 	public static function logout() {

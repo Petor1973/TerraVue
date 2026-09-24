@@ -24,7 +24,17 @@
       fullAdvice: 'Full travel advice', newsTitle: 'News, last {h} hours', newsLoading: 'Looking for news…',
       newsNone: 'No reports about security incidents found.', loading: 'Loading travel advice…',
       newsCount: '{n} news', parts: 'Parts: {level}', expandAll: 'Expand all', collapseAll: 'Collapse all',
-      menu: 'Menu', tabCountries: 'Countries', tabAlerts: 'Notifications',
+      menu: 'Menu', tabCountries: 'Countries', tabAlerts: 'Notifications', tabSettings: 'Settings',
+      settingsTitle: 'Settings', sourcesTitle: 'Travel advice and sources', aboutTitle: 'About {brand}', version: 'Version {v}',
+      tourMenu: 'Show the tour', tourNext: 'Next', tourBack: 'Back', tourDone: 'Done', tourSkip: 'Skip', tourStep: 'Step {i} of {n}',
+      tour: {
+        welcome: ['Welcome to {brand}', 'A short tour of the app in a few steps.'],
+        search: ['Add your countries', 'Type a country here, for example where your people work. Your list is saved with your account.'],
+        tile: ['One tile per country', 'The colour shows the advice level; labels flag regional warnings, disaster alerts and recent updates. Tap a tile for the full advice, the other governments and current alerts.'],
+        alerts: ['Notifications', 'Turn on push or e-mail here to hear when the advice for one of your countries changes or a disaster alert is issued.'],
+        settings: ['Settings', 'Choose whose government advice you follow, see the sources and licences, and find the app version.'],
+        account: ['Your account', 'Install the app, show this tour again, or sign out.'],
+      },
       adviceFrom: 'Advice from',
       adviceHint: 'Choose the government whose advice you follow, usually that of your nationality or your employer. It applies to all countries and to notifications.',
       otherSources: 'Other governments', inLanguage: 'Summary in {lang}.', followSource: 'Follow the advice of {source} (for all countries)', basis: 'Why this level',
@@ -46,8 +56,7 @@
       alertsTitle: 'Notifications',
       alertsLead: 'Get a message when the travel advice for one of your countries changes. The official advice is checked every hour.', alertsLeadGdacs: 'You also get a message when GDACS issues an orange or red disaster alert (earthquake, cyclone, flood, …) for one of your countries.',
       pushTitle: 'Push notifications on this device', pushOn: 'On for this device.', pushOff: 'Off for this device.',
-      pushTest: 'Send test notification', pushTestSent: 'Test sent to {n} device(s).',
-      pushAccount: 'Push is on for {n} device(s) of {email}. A test goes to all of them; devices signed in with another account do not receive it.',
+      pushAccount: 'Push is on for {n} device(s) of {email}. Devices signed in with another account get their own notifications.',
       pushDenied: 'Notifications are blocked for this site. Allow them in your browser or phone settings and try again.',
       pushUnsupported: 'This browser does not support push notifications. You can use e-mail notifications instead.',
       pushIos: 'iPhone and iPad: first add this app to your home screen (Share → Add to Home Screen), open it from there and turn notifications on in the app.',
@@ -100,7 +109,17 @@
       fullAdvice: 'Vollständige Reise- und Sicherheitshinweise', newsTitle: 'Nachrichten, letzte {h} Stunden',
       newsLoading: 'Suche nach Nachrichten…', newsNone: 'Keine Meldungen über Sicherheitsvorfälle gefunden.',
       newsCount: '{n} Meldungen', parts: 'Teilweise: {level}', expandAll: 'Alle aufklappen', collapseAll: 'Alle zuklappen',
-      menu: 'Menü', tabCountries: 'Länder', tabAlerts: 'Benachrichtigungen',
+      menu: 'Menü', tabCountries: 'Länder', tabAlerts: 'Benachrichtigungen', tabSettings: 'Einstellungen',
+      settingsTitle: 'Einstellungen', sourcesTitle: 'Reisehinweise und Quellen', aboutTitle: 'Über {brand}', version: 'Version {v}',
+      tourMenu: 'Einführung zeigen', tourNext: 'Weiter', tourBack: 'Zurück', tourDone: 'Fertig', tourSkip: 'Überspringen', tourStep: 'Schritt {i} von {n}',
+      tour: {
+        welcome: ['Willkommen bei {brand}', 'Eine kurze Einführung in die App in wenigen Schritten.'],
+        search: ['Länder hinzufügen', 'Geben Sie hier ein Land ein, z. B. wo Ihre Leute arbeiten. Ihre Liste wird mit Ihrem Konto gespeichert.'],
+        tile: ['Eine Kachel pro Land', 'Die Farbe zeigt die Hinweisstufe; Kennzeichen markieren regionale Warnungen, Katastrophenwarnungen und neue Änderungen. Tippen Sie auf eine Kachel für den vollständigen Hinweis, die anderen Regierungen und aktuelle Warnungen.'],
+        alerts: ['Benachrichtigungen', 'Schalten Sie hier Push oder E-Mail ein, um zu erfahren, wenn sich der Hinweis für eines Ihrer Länder ändert oder eine Katastrophenwarnung erscheint.'],
+        settings: ['Einstellungen', 'Wählen Sie, welcher Regierung Sie folgen, und finden Sie Quellen, Lizenzen und die App-Version.'],
+        account: ['Ihr Konto', 'App installieren, diese Einführung erneut zeigen oder abmelden.'],
+      },
       adviceFrom: 'Hinweise von',
       adviceHint: 'Wählen Sie die Regierung, deren Hinweisen Sie folgen, meist die Ihrer Staatsangehörigkeit oder Ihres Arbeitgebers. Gilt für alle Länder und Benachrichtigungen.',
       otherSources: 'Andere Regierungen', inLanguage: 'Zusammenfassung auf {lang}.', followSource: 'Hinweisen von {source} folgen (für alle Länder)', basis: 'Grundlage',
@@ -122,8 +141,7 @@
       alertsTitle: 'Benachrichtigungen',
       alertsLead: 'Erhalten Sie eine Nachricht, wenn sich der Reisehinweis für eines Ihrer Länder ändert. Die offiziellen Hinweise werden stündlich geprüft.', alertsLeadGdacs: 'Sie erhalten auch eine Nachricht, wenn GDACS für eines Ihrer Länder eine orange oder rote Katastrophenwarnung (Erdbeben, Wirbelsturm, Überschwemmung, …) herausgibt.',
       pushTitle: 'Push-Benachrichtigungen auf diesem Gerät', pushOn: 'Auf diesem Gerät aktiv.', pushOff: 'Auf diesem Gerät aus.',
-      pushTest: 'Testbenachrichtigung senden', pushTestSent: 'Test an {n} Gerät(e) gesendet.',
-      pushAccount: 'Push ist für {n} Gerät(e) von {email} aktiv. Ein Test geht an alle; Geräte mit einem anderen Konto erhalten ihn nicht.',
+      pushAccount: 'Push ist für {n} Gerät(e) von {email} aktiv. Geräte mit einem anderen Konto erhalten eigene Benachrichtigungen.',
       pushDenied: 'Benachrichtigungen sind für diese Website blockiert. Erlauben Sie sie in den Browser- oder Telefoneinstellungen und versuchen Sie es erneut.',
       pushUnsupported: 'Dieser Browser unterstützt keine Push-Benachrichtigungen. Nutzen Sie stattdessen E-Mail-Benachrichtigungen.',
       pushIos: 'iPhone und iPad: Fügen Sie die App zuerst zum Home-Bildschirm hinzu (Teilen → Zum Home-Bildschirm), öffnen Sie sie dort und aktivieren Sie die Benachrichtigungen in der App.',
@@ -177,7 +195,17 @@
       fullAdvice: 'Volledig reisadvies', newsTitle: 'Nieuws, afgelopen {h} uur', newsLoading: 'Nieuws zoeken…',
       newsNone: 'Geen berichten over veiligheidsincidenten gevonden.', loading: 'Reisadvies ophalen…',
       newsCount: '{n} berichten', parts: 'Deels: {level}', expandAll: 'Alles uitklappen', collapseAll: 'Alles inklappen',
-      menu: 'Menu', tabCountries: 'Landen', tabAlerts: 'Meldingen',
+      menu: 'Menu', tabCountries: 'Landen', tabAlerts: 'Meldingen', tabSettings: 'Instellingen',
+      settingsTitle: 'Instellingen', sourcesTitle: 'Reisadvies en bronnen', aboutTitle: 'Over {brand}', version: 'Versie {v}',
+      tourMenu: 'Rondleiding tonen', tourNext: 'Volgende', tourBack: 'Vorige', tourDone: 'Klaar', tourSkip: 'Overslaan', tourStep: 'Stap {i} van {n}',
+      tour: {
+        welcome: ['Welkom bij {brand}', 'Een korte rondleiding door de app in een paar stappen.'],
+        search: ['Landen toevoegen', 'Typ hier een land, bijvoorbeeld waar jouw mensen werken. Je lijst wordt bij je account bewaard.'],
+        tile: ['Eén tegel per land', 'De kleur toont het adviesniveau; labels wijzen op regionale waarschuwingen, rampenmeldingen en recente wijzigingen. Tik op een tegel voor het volledige advies, de andere overheden en actuele meldingen.'],
+        alerts: ['Meldingen', 'Zet hier push of e-mail aan om te horen wanneer het advies voor een van je landen wijzigt of er een rampenmelding is.'],
+        settings: ['Instellingen', 'Kies welke overheid je volgt, en vind hier de bronnen, licenties en het versienummer van de app.'],
+        account: ['Je account', 'App installeren, deze rondleiding opnieuw bekijken of uitloggen.'],
+      },
       adviceFrom: 'Advies van',
       adviceHint: 'Kies de overheid waarvan je het advies volgt, meestal die van je nationaliteit of werkgever. Geldt voor alle landen en voor meldingen.',
       otherSources: 'Andere overheden', inLanguage: 'Samenvatting in het {lang}.', followSource: 'Advies van {source} volgen (voor alle landen)', basis: 'Waarom dit niveau',
@@ -199,8 +227,7 @@
       alertsTitle: 'Meldingen',
       alertsLead: 'Krijg een bericht als het reisadvies voor een van je landen wijzigt. Het officiële advies wordt elk uur gecontroleerd.', alertsLeadGdacs: 'Je krijgt ook een bericht als GDACS een oranje of rode rampenmelding (aardbeving, cycloon, overstroming, …) geeft voor een van je landen.',
       pushTitle: 'Pushmeldingen op dit apparaat', pushOn: 'Aan op dit apparaat.', pushOff: 'Uit op dit apparaat.',
-      pushTest: 'Testmelding sturen', pushTestSent: 'Test verstuurd naar {n} apparaat/apparaten.',
-      pushAccount: 'Push staat aan voor {n} apparaat/apparaten van {email}. Een test gaat naar al die apparaten; apparaten met een ander account krijgen hem niet.',
+      pushAccount: 'Push staat aan voor {n} apparaat/apparaten van {email}. Apparaten met een ander account krijgen hun eigen meldingen.',
       pushDenied: 'Meldingen zijn geblokkeerd voor deze site. Sta ze toe in de instellingen van je browser of telefoon en probeer het opnieuw.',
       pushUnsupported: 'Deze browser ondersteunt geen pushmeldingen. Gebruik in plaats daarvan e-mailmeldingen.',
       pushIos: 'iPhone en iPad: zet de app eerst op je beginscherm (Deel → Zet op beginscherm), open hem daarvandaan en zet de meldingen in de app aan.',
@@ -260,7 +287,7 @@
   const RECENT_DAYS = 3; // "Recently updated" badge
 
   // ---------------------------------------------------------------- state
-  const KEY = { lang: 'travel-risk.lang', countries: 'travel-risk.countries', guide: 'travel-risk.install-guide', source: 'travel-risk.source' };
+  const KEY = { lang: 'travel-risk.lang', countries: 'travel-risk.countries', guide: 'travel-risk.install-guide', source: 'travel-risk.source', tour: 'travel-risk.tour' };
   const store = {
     get(k, fallback) { try { const v = localStorage.getItem(k); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
@@ -279,11 +306,12 @@
     me: { loggedIn: false, registrationRequired: false },
     view: 'loading',        // loading | auth | sent | app
     open: new Set(),        // countries shown with full details
-    tab: 'countries',       // countries | alerts
+    tab: 'countries',       // countries | alerts | settings
     push: 'unknown',        // unknown | unsupported | denied | off | on | busy
     notice: '', code: '',
     email: '', consent: false, sentTo: '', authError: '', menuOpen: false, installPrompt: null, updatedAt: null,
     guide: false,           // install instructions sheet open
+    tour: null,             // index of the current tour step, or null
   };
 
   const t = (key, vars = {}) => {
@@ -486,17 +514,20 @@
   const ICONS = {
     countries: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>',
     alerts: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>',
   };
-  const hasTabs = () => state.view === 'app' && state.me.loggedIn;
+  const hasTabs = () => state.view === 'app';
+  const tabIds = () => (state.me.loggedIn ? ['countries', 'alerts', 'settings'] : ['countries', 'settings']);
+  const TAB_LABEL = { countries: 'tabCountries', alerts: 'tabAlerts', settings: 'tabSettings' };
 
   // Same navigation twice: in the top bar on wide screens, as a bottom tab bar on phones and in the app.
   function tabs(where) {
     return h('nav', { class: 'tr-tabs tr-tabs-' + where, 'aria-label': t('menu') },
-      ['countries', 'alerts'].map(id => h('button', {
-        type: 'button', 'aria-current': state.tab === id ? 'page' : null,
+      tabIds().map(id => h('button', {
+        type: 'button', 'aria-current': state.tab === id ? 'page' : null, 'data-tab': id,
         onclick: () => { state.tab = id; state.menuOpen = false; state.notice = ''; render(); window.scrollTo(0, 0); },
       }, h('span', { class: 'tr-ico', 'aria-hidden': 'true', innerHTML: ICONS[id] }),
-        h('span', {}, t(id === 'countries' ? 'tabCountries' : 'tabAlerts')))));
+        h('span', {}, t(TAB_LABEL[id])))));
   }
 
   function topBar() {
@@ -515,8 +546,10 @@
       state.menuOpen && h('div', { class: 'tr-menu' },
         h('p', { class: 'tr-menu-email' }, state.me.email),
         canGuide() && h('button', { type: 'button', onclick: openGuide }, t('installMenu')),
+        h('button', { type: 'button', onclick: startTour }, t('tourMenu')),
         h('button', { type: 'button', onclick: signOut }, t('signOut')),
-        state.me.canDelete && h('button', { type: 'button', class: 'tr-danger', onclick: deleteAccount }, t('deleteAccount'))));
+        state.me.canDelete && h('button', { type: 'button', class: 'tr-danger', onclick: deleteAccount }, t('deleteAccount')),
+        h('p', { class: 'tr-menu-version' }, cfg.brand + ' · ' + t('version', { v: cfg.version }))));
 
     return h('header', { class: 'tr-top' },
       h('div', { class: 'tr-brand' },
@@ -645,18 +678,6 @@
     } catch { /* nothing registered on this device */ }
   }
 
-  async function testPush() {
-    state.notice = '';
-    try {
-      const r = await api('POST', 'push/test');
-      state.notice = t('pushTestSent', { n: r.sent });
-      state.me = await api('GET', 'me').catch(() => state.me); // devices gone at the push service are removed
-    } catch (e) {
-      state.notice = errText(e.message);
-    }
-    render();
-  }
-
   async function setEmailAlerts(on) {
     try {
       state.me = await api('PUT', 'me', { notifyEmail: on });
@@ -688,8 +709,7 @@
           ['on', 'off', 'busy'].includes(p) && switchControl(t('pushTitle'), p === 'on', on => (on ? enablePush() : disablePush()), p === 'busy')),
         p === 'unsupported' && canGuide() && h('button', { type: 'button', class: 'tr-ghost tr-small', onclick: openGuide }, t('howTo')),
         p === 'off' && h('p', { class: 'tr-muted tr-small-print' }, t('pushConsent')),
-        state.me.pushDevices > 0 && h('p', { class: 'tr-muted tr-small-print' }, t('pushAccount', { n: state.me.pushDevices, email: state.me.email })),
-        p === 'on' && h('button', { type: 'button', class: 'tr-ghost tr-small', onclick: testPush }, t('pushTest'))),
+        state.me.pushDevices > 0 && h('p', { class: 'tr-muted tr-small-print' }, t('pushAccount', { n: state.me.pushDevices, email: state.me.email }))),
       h('section', { class: 'tr-panel' },
         h('div', { class: 'tr-setting' },
           h('div', {}, h('h2', {}, t('emailTitle')), h('p', { class: 'tr-muted' }, t('emailText', { email: state.me.email }))),
@@ -749,18 +769,7 @@
       h('li', { class: 'lv' + maxLevel(iso) }, cname(iso),
         h('button', { type: 'button', 'aria-label': t('remove', { name: cname(iso) }), title: t('remove', { name: cname(iso) }), onclick: () => remove(iso) }, '×'))));
 
-    const sources = h('div', { class: 'tr-sources' },
-      h('span', { class: 'tr-sources-label', id: 'tr-src-label' }, t('adviceFrom')),
-      h('div', { class: 'tr-lang tr-src', role: 'group', 'aria-labelledby': 'tr-src-label' },
-        SOURCES.map(src => h('button', {
-          type: 'button', title: SOURCE[src], 'aria-pressed': String(src === state.source),
-          onclick: () => src !== state.source && setSource(src),
-        }, SOURCE_SHORT[src]))),
-      h('span', { class: 'tr-muted tr-sources-name' }, SOURCE[state.source]));
-
     return h('section', { class: 'tr-picker' },
-      sources,
-      h('p', { class: 'tr-muted tr-small-print tr-sources-hint' }, t('adviceHint')),
       h('div', { class: 'tr-row' },
         h('div', { class: 'tr-search' }, input, list),
         h('button', { type: 'button', class: 'tr-primary', onclick: refreshAll, disabled: !state.selected.length }, t('refresh'))),
@@ -915,14 +924,128 @@
         sorted.length ? sorted.map(card) : h('div', { class: 'tr-empty' }, t('empty'))),
       state.updatedAt && h('p', { class: 'tr-muted tr-stamp' },
         t('updatedAt', { time: state.updatedAt.toLocaleTimeString(LOCALE[state.lang], { hour: '2-digit', minute: '2-digit' }) })),
+      // The licence of the chosen source asks for attribution where its information is shown.
       h('footer', { class: 'tr-foot' },
-        h('p', {}, t('footer', { source: SOURCE[state.source] }), cfg.news && ' ' + t('footerNews', { news: NEWS[cfg.news] })),
-        h('p', {}, cfg.credits[state.source], ' ', t('notEndorsed')),
-        h('details', {}, h('summary', {}, t('allSources')),
-          h('ul', {}, SOURCES.map(src => h('li', {}, cfg.credits[src])),
-            cfg.alerts && h('li', {}, cfg.alertsCredit),
-            cfg.news === 'gdelt' && h('li', {}, 'News: The GDELT Project (gdeltproject.org).')))));
+        h('p', {}, cfg.credits[state.source], ' ', t('notEndorsed'), ' ',
+          h('button', { type: 'button', class: 'tr-link', onclick: () => goTab('settings') }, t('allSources')))));
   }
+
+  function goTab(id) {
+    state.tab = id; state.menuOpen = false; state.notice = '';
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  function sourcePicker() {
+    return h('div', { class: 'tr-sources' },
+      h('div', { class: 'tr-lang tr-src', role: 'group', 'aria-labelledby': 'tr-src-label' },
+        SOURCES.map(src => h('button', {
+          type: 'button', title: SOURCE[src], 'aria-pressed': String(src === state.source),
+          onclick: () => src !== state.source && setSource(src),
+        }, SOURCE_SHORT[src]))),
+      h('span', { class: 'tr-muted tr-sources-name' }, SOURCE[state.source]));
+  }
+
+  function settingsView() {
+    return h('div', { class: 'tr-app' },
+      h('section', { class: 'tr-hero' },
+        h('h1', {}, t('settingsTitle'))),
+      h('section', { class: 'tr-panel' },
+        h('h2', { id: 'tr-src-label' }, t('adviceFrom')),
+        sourcePicker(),
+        h('p', { class: 'tr-muted tr-small-print' }, t('adviceHint'))),
+      h('section', { class: 'tr-panel tr-sources-panel' },
+        h('h2', {}, t('sourcesTitle')),
+        h('p', { class: 'tr-muted' }, t('footer', { source: SOURCE[state.source] }), cfg.news && ' ' + t('footerNews', { news: NEWS[cfg.news] })),
+        h('ul', { class: 'tr-credits' }, SOURCES.map(src => h('li', {}, cfg.credits[src])),
+          cfg.alerts && h('li', {}, cfg.alertsCredit),
+          cfg.news === 'gdelt' && h('li', {}, 'News: The GDELT Project (gdeltproject.org).')),
+        h('p', { class: 'tr-muted tr-small-print' }, t('notEndorsed'))),
+      h('section', { class: 'tr-panel' },
+        h('h2', {}, t('aboutTitle', { brand: cfg.brand })),
+        h('p', { class: 'tr-muted' }, t('version', { v: cfg.version })),
+        h('div', { class: 'tr-about-actions' },
+          h('button', { type: 'button', class: 'tr-ghost', onclick: startTour }, t('tourMenu')),
+          canGuide() && h('button', { type: 'button', class: 'tr-ghost', onclick: openGuide }, t('installMenu')),
+          cfg.privacyUrl && h('a', { href: cfg.privacyUrl, target: '_blank', rel: 'noopener' }, t('privacy')))));
+  }
+
+  // ---------------------------------------------------------------- tour
+  // Interactive introduction: on first use and from the account menu / settings. Highlights
+  // one element per step; steps whose element is missing (no tiles yet) are left out.
+  let guidePending = false;
+  function tourSteps() {
+    return [
+      { id: 'welcome' },
+      { id: 'search', sel: ['#tr-search'] },
+      state.selected.length && { id: 'tile', sel: ['.tr-card'] },
+      state.me.loggedIn && { id: 'alerts', sel: ['.tr-tabs-bottom [data-tab=alerts]', '.tr-tabs-top [data-tab=alerts]'] },
+      { id: 'settings', sel: ['.tr-tabs-bottom [data-tab=settings]', '.tr-tabs-top [data-tab=settings]'] },
+      state.me.loggedIn && { id: 'account', sel: ['.tr-account > button'] },
+    ].filter(Boolean);
+  }
+  const shown = el => el.getClientRects().length > 0 && getComputedStyle(el).display !== 'none';
+  const tourTarget = step => (step.sel || []).map(sel => [...root.querySelectorAll(sel)].find(shown)).find(Boolean) || null;
+
+  function startTour() {
+    state.menuOpen = false; state.guide = false; state.tab = 'countries'; state.tour = 0;
+    window.scrollTo(0, 0);
+    render();
+  }
+
+  function endTour() {
+    state.tour = null;
+    store.set(KEY.tour, 1);
+    if (guidePending) { guidePending = false; state.guide = true; }
+    render();
+  }
+
+  function tourLayer() {
+    const steps = tourSteps();
+    const i = Math.min(state.tour, steps.length - 1);
+    const [title, text] = t('tour')[steps[i].id];
+    const last = i === steps.length - 1;
+    return h('div', { class: 'tr-tour', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'tr-tour-title' },
+      h('div', { class: 'tr-tour-spot', 'aria-hidden': 'true' }),
+      h('div', { class: 'tr-tour-bubble' },
+        h('p', { class: 'tr-tour-step' }, t('tourStep', { i: i + 1, n: steps.length })),
+        h('h2', { id: 'tr-tour-title' }, title.replace('{brand}', cfg.brand)),
+        h('p', {}, text.replace('{brand}', cfg.brand)),
+        h('div', { class: 'tr-tour-actions' },
+          !last && h('button', { type: 'button', class: 'tr-ghost tr-small tr-tour-skip', onclick: endTour }, t('tourSkip')),
+          i > 0 && h('button', { type: 'button', class: 'tr-ghost', onclick: () => { state.tour = i - 1; render(); } }, t('tourBack')),
+          h('button', {
+            type: 'button', class: 'tr-primary', id: 'tr-tour-next',
+            onclick: () => { if (last) endTour(); else { state.tour = i + 1; render(); } },
+          }, last ? t('tourDone') : t('tourNext')))));
+  }
+
+  // Positions the spotlight on the step's element and the bubble below (or above) it.
+  function placeTour() {
+    const layer = root.querySelector('.tr-tour');
+    if (!layer) return;
+    const steps = tourSteps();
+    const el = tourTarget(steps[Math.min(state.tour, steps.length - 1)]);
+    const spot = layer.querySelector('.tr-tour-spot');
+    const bubble = layer.querySelector('.tr-tour-bubble');
+    layer.classList.toggle('is-center', !el);
+    if (!el) { spot.removeAttribute('style'); bubble.removeAttribute('style'); return; }
+    let r = el.getBoundingClientRect();
+    if (r.top < 80 || r.bottom > innerHeight - 120) {
+      el.scrollIntoView({ block: 'center' });
+      r = el.getBoundingClientRect();
+    }
+    const pad = 6, gap = 12;
+    Object.assign(spot.style, { top: r.top - pad + 'px', left: r.left - pad + 'px', width: r.width + 2 * pad + 'px', height: r.height + 2 * pad + 'px' });
+    const width = Math.min(340, innerWidth - 24);
+    bubble.style.width = width + 'px';
+    const bh = bubble.offsetHeight;
+    const top = r.bottom + pad + gap + bh < innerHeight - 8 ? r.bottom + pad + gap : Math.max(8, r.top - pad - gap - bh);
+    bubble.style.top = top + 'px';
+    bubble.style.left = Math.min(Math.max(12, r.left + r.width / 2 - width / 2), innerWidth - width - 12) + 'px';
+  }
+  window.addEventListener('resize', placeTour);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && state.tour !== null) endTour(); });
 
   function render() {
     const focusId = document.activeElement && root.contains(document.activeElement) ? document.activeElement.id : null;
@@ -931,7 +1054,8 @@
     root.removeAttribute('data-loading');
     const main = state.view === 'loading' ? h('p', { class: 'tr-muted' }, t('signingIn'))
       : state.view !== 'app' ? authView()
-      : state.tab === 'alerts' && state.me.loggedIn ? alertsView() : appView();
+      : state.tab === 'alerts' && state.me.loggedIn ? alertsView()
+      : state.tab === 'settings' ? settingsView() : appView();
     root.classList.toggle('has-tabs', hasTabs());
     root.replaceChildren(...[
       topBar(),
@@ -939,7 +1063,12 @@
       main,
       state.guide && canGuide() && guideSheet(),
       hasTabs() && tabs('bottom'),
+      state.tour !== null && state.view === 'app' && tourLayer(),
     ].filter(Boolean));
+    if (state.tour !== null) {
+      placeTour();
+      document.getElementById('tr-tour-next')?.focus({ preventScroll: true });
+    }
     const search = document.getElementById('tr-search');
     if (focusId) document.getElementById(focusId)?.focus();
     if (search && searchValue) {
@@ -1029,9 +1158,8 @@
     }
     render();
     // First visit on a phone or tablet: offer install instructions (not again for a while after "Not now").
-    if (canGuide() && Date.now() > (store.get(KEY.guide, 0) || 0)) {
-      setTimeout(() => { state.guide = true; render(); }, 1500);
-    }
+    // On first use the tour comes first; the instructions follow when it closes.
+    const wantGuide = canGuide() && Date.now() > (store.get(KEY.guide, 0) || 0);
     const token = (location.hash.match(/tr-login=([a-f0-9]{64})/) || [])[1];
     if (token) {
       history.replaceState(null, '', location.pathname + location.search);
@@ -1072,7 +1200,11 @@
     state.selected = state.selected.filter(byIso);
     render();
 
+    if (wantGuide && state.view === 'app' && !store.get(KEY.tour)) guidePending = true;
+    else if (wantGuide) setTimeout(() => { state.guide = true; render(); }, 1500);
+
     if (state.view === 'app') {
+      if (!store.get(KEY.tour)) setTimeout(startTour, 800);
       if (state.me.loggedIn) detectPush();
       refreshAll();
       setInterval(refreshAll, 60 * 60 * 1000);

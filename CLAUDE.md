@@ -44,10 +44,17 @@ Code en commentaar: Engels.
   altijd terug te halen via het accountmenu en (iOS) vanuit Meldingen.
 - **Geïnstalleerde app** opent `app-pagina?tr_app=1` met `templates/app.php`: geen thema-header/-footer.
   Rekening houden met `env(safe-area-inset-*)` (notch, home-indicator).
-- **Navigatie:** **zwevende tabbalk ("eiland")** zoals in de App Store (nu: Landen, Meldingen): los van de onderrand, afgerond,
+- **Navigatie:** **zwevende tabbalk ("eiland")** zoals in de App Store (nu: Landen, Meldingen, Instellingen; Meldingen alleen ingelogd): los van de onderrand, afgerond,
   deels transparant (`backdrop-filter: blur`), icoon + kort label per tab, actieve tab in accentkleur,
   ruimte voor `safe-area-inset-bottom`. Op brede schermen (≥ 900px, niet in de app) staat dezelfde
   navigatie in de kopbalk. Het gebruikersmenu rechtsboven blijft. Nieuwe schermen = nieuwe tab.
+- **Instellingen-tab:** "Advies van" (bronkeuze), "Reisadvies en bronnen" (normalisatie-uitleg + alle bronvermeldingen),
+  "Over" (versienummer uit `VERSION`, rondleiding, installeren, privacy). Op het Landen-scherm blijft alleen de
+  bronvermelding van de gekozen bron staan (OGL vraagt vermelding waar de informatie getoond wordt) + link naar Instellingen.
+- **Rondleiding:** interactief (spotlight + tekstballon) bij de eerste keer in de app (localStorage `travel-risk.tour`),
+  opnieuw via accountmenu of Instellingen. Stappen zonder doel (nog geen tegels, niet ingelogd) vallen weg. Op
+  telefoons komt de installatiekaart pas ná de rondleiding. Esc sluit.
+- **Testmeldingen alleen in het beheer** (Terravue → Notifications, WP-CLI), niet in de app; de REST-route `push/test` is weg.
 
 ## Structuur
 
@@ -141,7 +148,7 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 ## API (travel-risk/v1)
 
 `GET advice/{ISO3}?source=` (buza|fcdo|aa|usdos|gac; `?lang=` = standaardbron), `GET alerts` (alle actuele GDACS-events met onze ISO3-codes; 404 `alerts_disabled` als uit), `GET news/{ISO3}` (404 `news_disabled` als uit), `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`), `POST login`,
-`POST login/verify` (`token` of `email`+`code`), `POST logout`, `GET push/key`, `POST|DELETE push`, `POST push/test`. Foutcodes als korte string (`rate_limited`, `not_found`, ...), vertaald in app.js.
+`POST login/verify` (`token` of `email`+`code`), `POST logout`, `GET push/key`, `POST|DELETE push`. Foutcodes als korte string (`rate_limited`, `not_found`, ...), vertaald in app.js.
 Cache: transients, alleen succesvolle antwoorden, standaard 60 min. GDELT-aanroepen minimaal 6 s uit elkaar.
 
 ## Testen

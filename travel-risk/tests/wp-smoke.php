@@ -169,8 +169,9 @@ add_filter( 'pre_http_request', function ( $pre, $args, $url ) {
 	return array( 'headers' => array(), 'body' => '', 'response' => array( 'code' => $code, 'message' => '' ), 'cookies' => array(), 'filename' => null );
 }, 5, 3 );
 
-$r = call( 'POST', 'push/test' );
-ok( 'test push: 1 sent, 1 gone', array( 'sent' => 1, 'failed' => 1 ) === $r->get_data(), $r->get_data() );
+ok( 'no test-push route in the app (admin tools only)', 404 === call( 'POST', 'push/test' )->get_status() );
+$r = TravelRisk\Notify::push_user( $user->ID, array( 'title' => 'Notifications are working', 'body' => 'Test' ) );
+ok( 'push: 1 sent, 1 gone', array( 'sent' => 1, 'failed' => 1 ) === $r, $r );
 ok( 'gone device removed', 1 === call( 'GET', 'me' )->get_data()['pushDevices'] );
 $p = $GLOBALS['travel_risk_pushes'][0];
 ok( 'push request is encrypted and signed', 'aes128gcm' === $p['args']['headers']['Content-Encoding'] && str_starts_with( $p['args']['headers']['Authorization'], 'vapid t=' ) && ! str_contains( $p['args']['body'], 'Notifications' ) );

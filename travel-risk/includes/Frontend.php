@@ -61,6 +61,7 @@ class Frontend {
 					'rest'       => esc_url_raw( rest_url( Rest::NS . '/' ) ),
 					'nonce'      => wp_create_nonce( 'wp_rest' ),
 					'brand'      => setting( 'brand_name' ),
+					'version'    => VERSION,
 					'languages'  => LANGUAGES,
 					'countries'  => plugins_url( 'data/countries.json', FILE ) . '?ver=' . VERSION,
 					'worker'     => Pwa::worker_url(),

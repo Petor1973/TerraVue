@@ -1,7 +1,7 @@
 === Terravue – Travel Risk Monitor ===
 Requires at least: 6.4
 Requires PHP: 8.0
-Stable tag: 0.9.0
+Stable tag: 0.10.0
 License: Proprietary
 
 Official travel advice and disaster alerts per country, as an installable web app (PWA).
@@ -24,6 +24,7 @@ the device location. An opened country shows the other four governments' levels 
 the strictest, with the governments that give it).
 The interface is English by default, with German and Dutch.
 
+A short interactive tour explains the app on first use (and again from the account menu or Settings).
 Users register once with their e-mail address (sign-in link or 6-digit code, no password, double opt-in).
 Their countries and language are saved to their account and on the device, so the app also works offline.
 

@@ -7,10 +7,12 @@
 define( 'TRAVEL_RISK_TESTING', true );
 require __DIR__ . '/../includes/Sources.php';
 require __DIR__ . '/../includes/News.php';
+require __DIR__ . '/../includes/Alerts.php';
 require __DIR__ . '/../includes/WebPush.php';
 
 use TravelRisk\Sources;
 use TravelRisk\News;
+use TravelRisk\Alerts;
 use TravelRisk\SourceException;
 use TravelRisk\WebPush;
 
@@ -342,6 +344,52 @@ check(
 );
 check( 'push: headers', array( $req['headers']['Content-Encoding'], $req['headers']['TTL'] ), array( 'aes128gcm', '86400' ) );
 check( 'b64url round trip', WebPush::b64url_decode( WebPush::b64url( "\xff\xfe\x00abc" ) ), "\xff\xfe\x00abc" );
+
+
+// ---------------------------------------------------------------- latest update notes
+$fcdo_latest = json_encode( array( 'details' => array( 'alert_status' => array(), 'change_description' => 'Latest update: <p>Updated information on protests in the capital.</p>' ) ) );
+check( 'latest: fcdo change_description, own label dropped', Sources::parse_fcdo( $fcdo_latest, 'norway' )['latest'], 'Updated information on protests in the capital.' );
+check( 'latest: fcdo without change_description', Sources::parse_fcdo( json_encode( array( 'details' => array() ) ), 'norway' )['latest'], null );
+$no = array( 'iso3' => 'NOR', 'iso2' => 'NO', 'en' => 'Norway' );
+$us_feed = fn( $desc ) => '<rss><channel><item><title>Norway - Level 2: Exercise Increased Caution</title><link>https://travel.state.gov/no.html</link><description>' . htmlspecialchars( $desc ) . '</description></item></channel></rss>';
+check( 'latest: usdos reissue note', Sources::parse_usdos( $us_feed( '<p>Reissued after periodic review with minor edits.</p><p>Exercise increased caution due to terrorism.</p>' ), $no )['latest'], 'Reissued after periodic review with minor edits.' );
+check( 'latest: usdos without note', Sources::parse_usdos( $us_feed( '<p>Exercise increased caution due to terrorism.</p>' ), $no )['latest'], null );
+$au_feed = '<rss xmlns:ta="x"><channel><item><title>Norway</title><link>https://www.smartraveller.gov.au/destinations/europe/norway</link><description>Latest update: We\'ve reviewed our advice for Norway. The level of our advice has not changed. Exercise normal safety precautions.</description><ta:warnings><ta:description>Exercise normal safety precautions</ta:description></ta:warnings></item></channel></rss>';
+check( 'latest: dfat two sentences after "Latest update"', Sources::parse_dfat( $au_feed, $no )['latest'], 'We\'ve reviewed our advice for Norway. The level of our advice has not changed.' );
+$aa_latest = json_encode( array( 'response' => array( '9' => array( 'content' => '<p>Letzte Änderungen: Aktualisierung im Abschnitt Sicherheit.</p><p>Landesspezifische Hinweise folgen. Weiterer Text.</p>' ) ) ) );
+check( 'latest: aa "Letzte Änderungen"', Sources::parse_aa( $aa_latest, '9' )['latest'], 'Aktualisierung im Abschnitt Sicherheit. Landesspezifische Hinweise folgen.' );
+$gac_latest = json_encode( array( 'data' => array( 'NO' => array( 'advisory-state' => 0, 'eng' => array( 'advisory-text' => 'Take normal security precautions', 'recent-updates' => '<p>Editorial change.</p>' ) ) ) ) );
+check( 'latest: gac recent-updates', Sources::parse_gac( $gac_latest, $no )['latest'], 'Editorial change.' );
+$buza_latest = '<d><introduction><![CDATA[<p>Het reisadvies voor Noorwegen heeft kleurcode groen.</p>]]></introduction><content><![CDATA[<h2>Wat is er veranderd?</h2><p>De informatie over natuurbranden is aangepast.</p>]]></content></d>';
+check( 'latest: buza "Wat is er veranderd?"', Sources::parse_buza( $buza_latest )['latest'], 'De informatie over natuurbranden is aangepast.' );
+check( 'latest: none in plain text', Sources::after_label( 'Nothing to see here.', 'Latest update' ), null );
+
+// ---------------------------------------------------------------- GDACS disaster alerts
+$now   = 1790000000;
+$when  = fn( $s ) => gmdate( 'D, d M Y H:i:s \G\M\T', $now - $s );
+$event = fn( $title, $type, $id, $level, $to, $current, $iso, $names, $severity = '' ) => '<item><title>' . $title . '</title><link>https://www.gdacs.org/report.aspx?eventtype=' . $type . '&amp;eventid=' . $id . '</link>'
+	. '<pubDate>' . $to . '</pubDate><gdacs:iscurrent>' . $current . '</gdacs:iscurrent><gdacs:fromdate>' . $to . '</gdacs:fromdate><gdacs:todate>' . $to . '</gdacs:todate>'
+	. '<gdacs:eventtype>' . $type . '</gdacs:eventtype><gdacs:alertlevel>' . $level . '</gdacs:alertlevel><gdacs:eventid>' . $id . '</gdacs:eventid>'
+	. '<gdacs:severity unit="M" value="6.1">' . $severity . '</gdacs:severity><gdacs:iso3>' . $iso . '</gdacs:iso3><gdacs:country>' . $names . '</gdacs:country>'
+	. '<gdacs:resources><gdacs:resource id="x" url="http://example.org/?iso3=XXX"><gdacs:title>UNOSAT maps</gdacs:title></gdacs:resource></gdacs:resources></item>';
+$gdacs = '<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:gdacs="http://www.gdacs.org"><channel><title>GDACS RSS information</title>'
+	. $event( 'Orange earthquake alert (Magnitude 6.1M, Depth:10km) in Indonesia', 'EQ', '1001', 'Orange', $when( 7200 ), 'true', 'IDN', 'Indonesia', 'Magnitude 6.1M, Depth:10km' )
+	. $event( 'Green earthquake alert (Magnitude 5.5M) in South Africa', 'EQ', '1002', 'Green', $when( 5 * 3600 ), 'true', 'ZAF', 'South Africa' )
+	. $event( 'Green earthquake alert (Magnitude 5.0M) in Chile', 'EQ', '1003', 'Green', $when( 5 * 86400 ), 'true', 'CHL', 'Chile' )
+	. $event( 'Drought is on going in Bulgaria, Iraq, Iran, Turkey', 'DR', '1004', 'Green', $when( 3600 ), 'true', 'BGR', 'Bulgaria, Iraq, Iran, Turkey' )
+	. $event( 'Red drought alert in Bulgaria, Iraq, Iran, Turkey', 'DR', '1005', 'Red', $when( 3600 ), 'true', 'BGR', 'Bulgaria, Iraq, Iran, Turkey' )
+	. $event( 'Red alert for tropical cyclone OFFSHORE-26', 'TC', '1006', 'Red', $when( 3600 ), 'true', '', '' )
+	. $event( 'Orange flood alert in Norway', 'FL', '1007', 'Orange', $when( 10 * 86400 ), 'false', 'NOR', 'Norway' )
+	. '</channel></rss>';
+$map    = array_column( $countries = json_decode( file_get_contents( __DIR__ . '/../data/countries.json' ), true ), null, 'iso3' );
+$events = Alerts::parse( $gdacs, $map, $now );
+check( 'gdacs: kept events, most severe first', array_column( $events, 'id' ), array( 'DR1005', 'EQ1001', 'EQ1002' ) );
+check( 'gdacs: all countries of a multi-country event (iso3 has only the first)', $events[0]['countries'], array( 'BGR', 'IRN', 'IRQ', 'TUR' ) );
+check( 'gdacs: fields', array( $events[1]['type'], $events[1]['level'], $events[1]['severity'], $events[1]['url'], $events[1]['to'] ), array( 'EQ', 'orange', 'Magnitude 6.1M, Depth:10km', 'https://www.gdacs.org/report.aspx?eventtype=EQ&eventid=1001', gmdate( 'c', $now - 7200 ) ) );
+check( 'gdacs: for_country', array_column( Alerts::for_country( $events, 'TUR' ), 'id' ), array( 'DR1005' ) );
+check( 'gdacs: nothing for a quiet country', Alerts::for_country( $events, 'NOR' ), array() );
+check( 'gdacs: empty channel is a quiet day', Alerts::parse( '<rss><channel><title>GDACS</title></channel></rss>', $map, $now ), array() );
+check( 'gdacs: not a feed is an error', ( function () { try { Alerts::parse( '<rss></rss>', array(), 0 ); return 'no error'; } catch ( SourceException $e ) { return $e->getMessage(); } } )(), 'unexpected_response' );
 
 // ---------------------------------------------------------------- countries.json
 $countries = json_decode( file_get_contents( __DIR__ . '/../data/countries.json' ), true );

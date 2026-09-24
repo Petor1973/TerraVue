@@ -14,7 +14,7 @@ class Cli {
 
 	/**
 	 * Runs the hourly check: fetches advice for all followed countries, notifies on level changes
-	 * and pre-fetches news.
+	 * and on new orange/red GDACS disaster alerts, and pre-fetches news.
 	 *
 	 * [--skip-news]
 	 * : Skip the news pre-fetch.
@@ -22,8 +22,8 @@ class Cli {
 	public function check( $args, $assoc ): void {
 		$s = Notify::check( empty( $assoc['skip-news'] ) );
 		\WP_CLI::success( sprintf(
-			'%d users, %d pairs, %d source errors, %d changes, %d notifications, news for %d countries.',
-			$s['users'], $s['pairs'], $s['errors'], $s['changes'], $s['notified'], $s['news']
+			'%d users, %d pairs, %d source errors, %d changes, %d notifications, %d disaster alert notifications, news for %d countries.',
+			$s['users'], $s['pairs'], $s['errors'], $s['changes'], $s['notified'], $s['alerts'], $s['news']
 		) );
 	}
 

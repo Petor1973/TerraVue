@@ -1,8 +1,9 @@
 # Terravue (werknaam) — Travel Risk Monitor
 
 Zelfstandige app van Peter Langerak (eigen onderneming). Gebruikers kiezen landen en zien per land het
-officiële reisadvies en recent veiligheidsnieuws, en krijgen een push- en/of e-mailmelding als het
-reisadvies van een gevolgd land wijzigt. Geleverd als **WordPress-plugin** op een eigen server, en installeerbaar als **PWA**.
+officiële reisadvies (met de eigen "laatste wijziging"-notitie van de overheid) en actuele rampenmeldingen
+(GDACS), en krijgen een push- en/of e-mailmelding als het reisadvies van een gevolgd land wijzigt of GDACS
+er een oranje/rode melding voor geeft. Nieuws (GDELT/Google) is optioneel en staat standaard uit. Geleverd als **WordPress-plugin** op een eigen server, en installeerbaar als **PWA**.
 
 Communicatie met Peter: **Nederlands**. UI: **Engels standaard**, met schakelaar EN / DE / NL.
 Code en commentaar: Engels.
@@ -12,6 +13,9 @@ Code en commentaar: Engels.
 - **Volledig los van SGL / Lely / elke werkgever.** Dit is een schone herbouw: geen code, teksten, data,
   namen, huisstijl of koppelingen (planning, SQL Server) van een werkgever gebruiken of overnemen.
   Waarschuw Peter direct als een wijziging daar toch richting gaat (werkgeversbeleid, IE, arbeidscontract).
+  **Gebruik binnen een team op het werk** (sept. 2026 genoemd: "risico's voor onze mensen die daarheen gaan"):
+  pas na akkoord van werkgever (manager/IT/privacy officer); geen namen, reisplannen of andere
+  werkgeversdata in de app; collega's registreren zelf; de app vervangt geen travel-security-beleid of -dienst.
 - **AVG.** Persoonsgegevens beperkt tot: e-mailadres (WordPress-gebruiker), tijdstip van toestemming,
   gekozen landen, taal, gekozen adviesbron, en — alleen als de gebruiker ze aanzet — push-abonnementen per apparaat
   (endpoint + sleutels) en de keuze voor e-mailmeldingen. Nieuwe persoonsgegevens (bv. locatie, telefoonnummer) alleen
@@ -23,8 +27,9 @@ Code en commentaar: Engels.
 - **Push** alleen naar bekende pushdiensten (`Notify::PUSH_HOSTS`: Google, Mozilla, Apple, Microsoft), nooit
   naar willekeurige URL's (SSRF). Payload altijd versleuteld (RFC 8291), VAPID-sleutels per site in een option.
 - **Bronnen/licenties.** Reisadvies van zes overheden (zie tabel "Bronnen en licenties"); bronvermelding per
-  bron in de app-footer (`Sources::ATTRIBUTION`), plus "niet verbonden aan een overheid". Nieuws: GDELT (standaard). Google News RSS is alleen voor persoonlijk,
-  niet-commercieel gebruik — voor een betaalde dienst een gelicentieerde nieuwsbron kiezen.
+  bron in de app-footer (`Sources::ATTRIBUTION`), plus "niet verbonden aan een overheid". Rampen: GDACS (`Alerts::ATTRIBUTION`).
+  Nieuws standaard uit; GDELT optioneel. Google News RSS is alleen voor persoonlijk, niet-commercieel gebruik —
+  ook níet voor intern gebruik in een team op het werk; dan een gelicentieerde nieuwsbron kiezen.
 - **Merk.** "Terravue" is een werknaam; nog geen merkonderzoek gedaan. "UNECTA" is een bestaand merk van
   een Braziliaans bedrijf: niet gebruiken als naam, en de stijl niet zo dicht benaderen dat verwarring ontstaat.
 - Geen build-stap, geen Composer/npm-dependencies in de plugin. PHP 8.0+, WordPress 6.4+.
@@ -50,7 +55,8 @@ Code en commentaar: Engels.
 travel-risk/                 De plugin (deze map wordt gezipt en geüpload)
   travel-risk.php            Bootstrap, instellingen, helpers (countries(), cached(), http_get())
   includes/Sources.php       Reisadvies-adapters BuZa / FCDO / AA -> niveau 1..4 (zonder WP, testbaar)
-  includes/News.php          Nieuws (GDELT, Google News RSS), ruisfilter (zonder WP, testbaar)
+  includes/News.php          Nieuws (GDELT, Google News RSS), ruisfilter (zonder WP, testbaar); standaard uit
+  includes/Alerts.php        GDACS-rampenmeldingen: RSS -> events per land (zonder WP, testbaar)
   includes/Rest.php          REST API travel-risk/v1
   includes/Auth.php          Magic link + 6-cijferige code / double opt-in, rate limiting
   includes/Notify.php        Meldingen: push-apparaten, uurlijkse controle (WP-Cron), push + e-mail
@@ -83,6 +89,10 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 - BuZa: geen kleurveld; per zin geparsed (`Sources::buza_levels`). Zin met "grootste deel/rest van" wint;
   anders eerste zin zónder regio. Regio's ook in samenstellingen ("grensgebieden", "Gazastrook") en
   "tussen X en Y". **Bij twijfel: testgeval toevoegen** (Israël-teksten staan als voorbeeld in de tests).
+- Elk advies heeft `latest`: de eigen notitie van de overheid over de laatste wijziging, waar de bron die
+  levert (FCDO `details.change_description`, VS eerste zin "Reissued/Updated …", CA `recent-updates`,
+  AU "Latest update:", AA "Letzte Änderungen:", BuZa "Wat is er veranderd?"); anders null. Getoond als
+  "Laatste wijziging" in de uitgeklapte tegel; badge "Recent gewijzigd" als `updated` < 3 dagen oud is.
 - Elk advies heeft `basis`: de ruwe gegevens waarop het niveau berust (alert_status, AA-vlaggen + zin,
   beslissende BuZa-zin, US-titel, CA advisory-state, AU-omschrijving). De app toont dit als "Waarom dit niveau",
   zodat afwijkingen live te controleren zijn.
@@ -107,6 +117,10 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 | usdos | VS, State Department | `travel.state.gov/_res/rss/TAsTWs.xml` (één feed) | "Level N" in titel; regionaal uit tekst | publiek domein, bronvermelding gewaardeerd |
 | gac | Canada, Global Affairs | `data.international.gc.ca/travel-voyage/index-alpha-eng.json` | `advisory-state` 0–3 (+1); `has-regional-advisory` zonder niveau → `regional: true` | Open Government Licence – Canada |
 | dfat | Australië, Smartraveller | `smartraveller.gov.au/countries/documents/index.rss` | `<ta:description>` (tekst → niveau); regionaal uit tekst | **licentie nog verifiëren** (vermoedelijk CC BY) |
+| gdacs | EU-Commissie (JRC) + VN, rampen | `www.gdacs.org/xml/rss.xml` (één feed, 30 min cache) | `gdacs:alertlevel` Green/Orange/Red, `gdacs:iso3` (alleen 1e land!) + `gdacs:country` (alle namen) | **voorwaarden nog verifiëren** (vrij gebruik met bronvermelding) |
+
+- GDACS: groen alleen < 72 u en nooit droogte (ruis); afgelopen events > 7 dagen weg. Tegel krijgt een badge bij
+  oranje/rood; uitgeklapt staan alle meldingen. Formaat geverifieerd tegen de fixtures van `aio-georss-gdacs`.
 
 - De JSON-API van de VS (`cadataapi.state.gov/api/TravelAdvisories`) is sinds sept. 2026 leeg; de RSS-feed werkt.
   travel.state.gov zit achter Cloudflare: nooit omzeilen (geen nep-user-agent). Bij 403: bron tijdelijk niet beschikbaar.
@@ -123,7 +137,7 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 
 ## API (travel-risk/v1)
 
-`GET advice/{ISO3}?source=` (buza|fcdo|aa|usdos|gac|dfat; `?lang=` = standaardbron), `GET news/{ISO3}`, `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`), `POST login`,
+`GET advice/{ISO3}?source=` (buza|fcdo|aa|usdos|gac|dfat; `?lang=` = standaardbron), `GET alerts` (alle actuele GDACS-events met onze ISO3-codes; 404 `alerts_disabled` als uit), `GET news/{ISO3}` (404 `news_disabled` als uit), `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`), `POST login`,
 `POST login/verify` (`token` of `email`+`code`), `POST logout`, `GET push/key`, `POST|DELETE push`, `POST push/test`. Foutcodes als korte string (`rate_limited`, `not_found`, ...), vertaald in app.js.
 Cache: transients, alleen succesvolle antwoorden, standaard 60 min. GDELT-aanroepen minimaal 6 s uit elkaar.
 
@@ -140,6 +154,9 @@ Elk uur (`travel_risk_check`, WP-Cron) haalt `Notify::check()` voor elk paar (br
 met meldingen volgen het advies op (bron = taal van de gebruiker), vergelijkt `level`/`maxLevel` met de
 vorige run (option `travel_risk_snapshots`) en stuurt bij verschil push en/of e-mail in de taal van de
 gebruiker. Eerste run per paar = alleen nulmeting. Bij een storing blijft de oude nulmeting staan.
+Daarna `Notify::check_alerts()`: nieuwe oranje/rode GDACS-events voor gevolgde landen (ongeacht bron) → één
+melding per gebruiker per event, opnieuw bij escalatie oranje → rood (option `travel_risk_alerts_seen`,
+event-id → niveau; eerste run = nulmeting). Groen meldt nooit.
 Pushdienst antwoordt 404/410 → apparaat wordt verwijderd. Uitloggen/account wissen verwijdert het apparaat.
 iOS: push alleen in de app op het beginscherm (iOS 16.4+). Echte cron aanbevolen (zie instellingenpagina).
 
@@ -149,7 +166,7 @@ uurlijkse controle nu draaien (zonder nieuws-prefetch, want die duurt minuten). 
 `wp travel-risk check [--skip-news]` en `wp travel-risk test-notify --to=<id|email> [--country=ISR]`
 (`--user` is een gereserveerde WP-CLI-optie). Server-cron zonder WP-Cron: `wp travel-risk check` elk uur.
 
-**Nieuws/GDELT:** traag en vaak time-outs. Daarom 30 s time-out, cache 150 min en prefetch van nieuws voor
+**Nieuws/GDELT:** standaard uit sinds 0.8.0 (route A: officiële "laatste wijziging" + GDACS). Traag en vaak time-outs. Daarom 30 s time-out, cache 150 min en prefetch van nieuws voor
 gevolgde landen (max. 30 per run, 6 s uit elkaar) tijdens de uurlijkse controle.
 
 ## Backlog (voorstel)
@@ -160,8 +177,10 @@ gevolgde landen (max. 30 per run, 6 s uit elkaar) tijdens de uurlijkse controle.
 2. Echte bronnen valideren tegen live data (in deze ontwikkelomgeving was internet dicht): GOV.UK-slugs,
    AA-veldnamen, BuZa-teksten van alle landen door `buza_levels` halen en afwijkingen als test vastleggen;
    US/AU-landnamen tegen `name_matches()` (ontbrekende treffers → alias); licenties buza/aa/dfat bevestigen.
-3. Nieuwsbron: GDELT is onbetrouwbaar; Google News niet commercieel. Kiezen tussen officiële meldingen
-   (updates uit de overheidsfeeds zelf, GDACS voor rampen) en/of een betaalde nieuws-API met licentie.
+3. Nieuws: route A gebouwd (0.8.0). Eventueel later een betaalde nieuws-API met licentie of professionele
+   risicodata (Riskline, Crisis24). GDACS-voorwaarden en "laatste wijziging"-velden live controleren.
+7. Dagelijks wereldoverzicht (voorstel sept. 2026, nog niet bevestigd): alle landen/bronnen 1× per dag,
+   push/e-mail op een gekozen uur, tab "Wijzigingen", ook "advies bijgewerkt zonder niveauwijziging".
 4. Regio's per land (bv. werklocatie in een regionaal waarschuwingsgebied).
 5. Definitieve naam + merkonderzoek (BOIP/EUIPO), logo en kleuren; daarna `brand_name` en kleuren instellen.
 6. Hosting: HTTPS verplicht (service worker, push), SMTP voor wp_mail, verwerkersovereenkomst met hoster.

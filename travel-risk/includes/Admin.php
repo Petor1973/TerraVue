@@ -1,7 +1,7 @@
 <?php
 /**
  * Admin menu "<brand>" with three pages:
- *   Settings       travel-risk                 product name, colours, app page, registration, news
+ *   Settings       travel-risk                 product name, colours, app page, registration, alerts, news
  *   Notifications  travel-risk-notifications   hourly check status and test tools
  *   Sources        travel-risk-sources         governments, licences, live source test
  */
@@ -80,6 +80,7 @@ class Admin {
 			'color_primary'        => sanitize_hex_color( $input['color_primary'] ?? '' ) ?: $d['color_primary'],
 			'color_accent'         => sanitize_hex_color( $input['color_accent'] ?? '' ) ?: $d['color_accent'],
 			'require_registration' => empty( $input['require_registration'] ) ? 0 : 1,
+			'alerts'               => empty( $input['alerts'] ) ? 0 : 1,
 			'news_provider'        => in_array( $input['news_provider'] ?? '', array( 'gdelt', 'google', 'none' ), true ) ? $input['news_provider'] : $d['news_provider'],
 			'cache_minutes'        => min( 1440, max( 5, (int) ( $input['cache_minutes'] ?? $d['cache_minutes'] ) ) ),
 			'news_hours'           => min( 168, max( 12, (int) ( $input['news_hours'] ?? $d['news_hours'] ) ) ),
@@ -134,14 +135,21 @@ class Admin {
 						</td>
 					</tr>
 					<tr>
+						<th scope="row">Disaster alerts</th>
+						<td>
+							<label><input type="checkbox" name="<?php echo esc_attr( $name( 'alerts' ) ); ?>" value="1" <?php checked( $s['alerts'] ); ?>> Show GDACS disaster alerts (earthquakes, cyclones, floods, volcanoes, wildfires) per country, and notify followers of orange and red alerts</label>
+							<p class="description">Global Disaster Alert and Coordination System of the European Commission and the United Nations. One public feed, read every <?php echo (int) Alerts::CACHE_MINUTES; ?> minutes.</p>
+						</td>
+					</tr>
+					<tr>
 						<th scope="row"><label for="tr-news">News source</label></th>
 						<td>
 							<select id="tr-news" name="<?php echo esc_attr( $name( 'news_provider' ) ); ?>">
-								<option value="gdelt" <?php selected( $s['news_provider'], 'gdelt' ); ?>>GDELT (open data)</option>
+								<option value="none" <?php selected( $s['news_provider'], 'none' ); ?>>No news (official updates and disaster alerts only)</option>
+								<option value="gdelt" <?php selected( $s['news_provider'], 'gdelt' ); ?>>GDELT (open data; slow, often times out)</option>
 								<option value="google" <?php selected( $s['news_provider'], 'google' ); ?>>Google News RSS (personal, non-commercial use only)</option>
-								<option value="none" <?php selected( $s['news_provider'], 'none' ); ?>>No news</option>
 							</select>
-							<p class="description">For a commercial service, use a news source whose licence allows it.</p>
+							<p class="description">Each country already shows the government's own note on its latest update. Google News RSS may not be used for a business or a team at work; for that, choose a news source whose licence allows it.</p>
 						</td>
 					</tr>
 					<tr>
@@ -202,8 +210,8 @@ class Admin {
 		self::guard( 'travel_risk_check_now' );
 		$s = Notify::check( false );
 		self::back( self::NOTIFICATIONS, sprintf(
-			'Check done: %d users with notifications, %d source/country pairs checked, %d source errors, %d level changes, %d notifications sent.',
-			$s['users'], $s['pairs'], $s['errors'], $s['changes'], $s['notified']
+			'Check done: %d users with notifications, %d source/country pairs checked, %d source errors, %d level changes, %d notifications sent, %d disaster alert notifications sent.',
+			$s['users'], $s['pairs'], $s['errors'], $s['changes'], $s['notified'], (int) ( $s['alerts'] ?? 0 )
 		) );
 	}
 
@@ -242,12 +250,12 @@ class Admin {
 			<?php endif; ?>
 
 			<h2>Hourly check</h2>
-			<p>Users turn on push and e-mail notifications in the app. The advice for followed countries is checked every hour; users are notified when the level changes.</p>
+			<p>Users turn on push and e-mail notifications in the app. The advice for followed countries is checked every hour; users are notified when the level changes<?php echo setting( 'alerts' ) ? ', and when GDACS issues an orange or red disaster alert for one of their countries (once per event, again if it turns red; the first check only records what is current)' : ''; ?>.</p>
 			<p>
 				Last check: <strong><?php echo $last ? esc_html( human_time_diff( $last ) . ' ago' ) : 'not yet'; ?></strong>.
 				Next: <strong><?php echo $next ? esc_html( 'in ' . human_time_diff( $next ) ) : 'not scheduled'; ?></strong>.
 				<?php if ( is_array( $stats ) ) : ?>
-					Last run: <?php echo (int) $stats['pairs']; ?> source/country pairs, <?php echo (int) $stats['errors']; ?> source errors, <?php echo (int) $stats['changes']; ?> changes, <?php echo (int) $stats['notified']; ?> notifications, news pre-fetched for <?php echo (int) $stats['news']; ?> countries.
+					Last run: <?php echo (int) $stats['pairs']; ?> source/country pairs, <?php echo (int) $stats['errors']; ?> source errors, <?php echo (int) $stats['changes']; ?> changes, <?php echo (int) $stats['notified']; ?> notifications, <?php echo (int) ( $stats['alerts'] ?? 0 ); ?> disaster alert notifications, news pre-fetched for <?php echo (int) $stats['news']; ?> countries.
 				<?php endif; ?>
 			</p>
 			<p class="description">WP-Cron only runs when the site has visitors. For reliable notifications, add <code>define( 'DISABLE_WP_CRON', true );</code> to wp-config.php and a server cron job that runs <code>wp travel-risk check</code> every hour (or calls <code>wp-cron.php</code> every 5–15 minutes).</p>
@@ -292,7 +300,7 @@ class Admin {
 			$start = microtime( true );
 			try {
 				$a      = $fresh->advice( $id, $country );
-				$rows[] = array( 'id' => $id, 'level' => $a['level'], 'max' => $a['maxLevel'], 'regional' => ! empty( $a['regional'] ), 'basis' => $a['basis'] ?? '', 'url' => $a['url'] ?? '', 'error' => '' );
+				$rows[] = array( 'id' => $id, 'level' => $a['level'], 'max' => $a['maxLevel'], 'regional' => ! empty( $a['regional'] ), 'basis' => $a['basis'] ?? '', 'latest' => $a['latest'] ?? '', 'updated' => $a['updated'] ?? '', 'url' => $a['url'] ?? '', 'error' => '' );
 			} catch ( SourceException $e ) {
 				$rows[] = array( 'id' => $id, 'error' => $e->getMessage() );
 			} catch ( \Throwable $e ) {
@@ -300,7 +308,18 @@ class Admin {
 			}
 			$rows[ count( $rows ) - 1 ]['ms'] = (int) ( ( microtime( true ) - $start ) * 1000 );
 		}
-		self::back( self::SOURCES, array( 'country' => $country, 'rows' => $rows ) );
+		$alerts = null;
+		if ( setting( 'alerts' ) ) {
+			try {
+				$res    = http_get( Alerts::FEED, 20 );
+				$alerts = $res['status'] >= 200 && $res['status'] < 300
+					? Alerts::for_country( Alerts::parse( $res['body'], countries(), time() ), $country['iso3'] )
+					: 'http_' . $res['status'];
+			} catch ( SourceException $e ) {
+				$alerts = $e->getMessage();
+			}
+		}
+		self::back( self::SOURCES, array( 'country' => $country, 'rows' => $rows, 'alerts' => $alerts ) );
 	}
 
 	public static function sources_page(): void {
@@ -321,6 +340,11 @@ class Admin {
 						<td><?php echo $verified ? '✅ verified' : '⚠️ check terms before commercial use'; ?></td>
 					</tr>
 				<?php endforeach; ?>
+					<tr>
+						<td><strong>GDACS</strong> (disaster alerts)<br><code>gdacs</code></td>
+						<td>Free use with attribution (GDACS terms)<br><span class="description"><?php echo esc_html( Alerts::ATTRIBUTION ); ?></span></td>
+						<td>⚠️ check terms before commercial use</td>
+					</tr>
 				</tbody>
 			</table>
 
@@ -338,23 +362,36 @@ class Admin {
 			<?php elseif ( is_array( $result ) ) : ?>
 				<h3><?php echo esc_html( $result['country']['en'] ); ?></h3>
 				<table class="widefat striped" style="max-width:1100px">
-					<thead><tr><th>Source</th><th>Level</th><th>Strictest in parts</th><th>Why this level</th><th>Time</th></tr></thead>
+					<thead><tr><th>Source</th><th>Level</th><th>Strictest in parts</th><th>Why this level</th><th>Latest update</th><th>Time</th></tr></thead>
 					<tbody>
 					<?php foreach ( $result['rows'] as $r ) : ?>
 						<tr>
 							<td><?php echo esc_html( Sources::NAMES[ $r['id'] ] ); ?></td>
 							<?php if ( $r['error'] ) : ?>
-								<td colspan="3"><strong style="color:#b32d2e"><?php echo esc_html( $r['error'] ); ?></strong></td>
+								<td colspan="4"><strong style="color:#b32d2e"><?php echo esc_html( $r['error'] ); ?></strong></td>
 							<?php else : ?>
 								<td><?php echo esc_html( $levels[ (int) $r['level'] ] ); ?></td>
 								<td><?php echo esc_html( $r['max'] > $r['level'] ? $levels[ (int) $r['max'] ] : ( $r['regional'] ? 'regional warnings (no level)' : '—' ) ); ?></td>
 								<td><?php echo esc_html( $r['basis'] ); ?><?php if ( $r['url'] ) : ?> <a href="<?php echo esc_url( $r['url'] ); ?>" target="_blank" rel="noopener">official page</a><?php endif; ?></td>
+								<td><?php echo esc_html( trim( ( $r['updated'] ? substr( $r['updated'], 0, 10 ) . ' ' : '' ) . ( $r['latest'] ?: '—' ) ) ); ?></td>
 							<?php endif; ?>
 							<td><?php echo (int) $r['ms']; ?> ms</td>
 						</tr>
 					<?php endforeach; ?>
 					</tbody>
 				</table>
+				<?php if ( is_string( $result['alerts'] ?? null ) ) : ?>
+					<p>GDACS: <strong style="color:#b32d2e"><?php echo esc_html( $result['alerts'] ); ?></strong></p>
+				<?php elseif ( is_array( $result['alerts'] ?? null ) ) : ?>
+					<p>GDACS disaster alerts for <?php echo esc_html( $result['country']['en'] ); ?>: <?php echo $result['alerts'] ? '' : 'none current.'; ?></p>
+					<?php if ( $result['alerts'] ) : ?>
+						<ul>
+						<?php foreach ( $result['alerts'] as $e ) : ?>
+							<li><strong><?php echo esc_html( ucfirst( $e['level'] ) ); ?></strong> <a href="<?php echo esc_url( $e['url'] ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $e['title'] ); ?></a></li>
+						<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+				<?php endif; ?>
 				<p class="description">Errors: <code>no_home_advice</code> = a government gives no advice for its own country; <code>not_found</code> = the country is not in that source; <code>http_403</code> = the source refused the request (e.g. bot protection); <code>unreachable</code> = no connection or time-out.</p>
 			<?php endif; ?>
 		</div>

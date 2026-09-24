@@ -1,7 +1,8 @@
 # Terravue – Travel Risk Monitor (working name)
 
-WordPress plugin + PWA: official travel advice (UK FCDO, Auswärtiges Amt, Dutch MFA) and recent security
-news for the countries you follow. English UI by default, with German and Dutch.
+WordPress plugin + PWA: official travel advice from six governments (NL, UK, DE, US, CA, AU), their notes on
+the latest update, and GDACS disaster alerts for the countries you follow, with push and e-mail notifications.
+English UI by default, with German and Dutch.
 
 - Plugin: [`travel-risk/`](travel-risk/) — see [`travel-risk/readme.txt`](travel-risk/readme.txt) for installation.
 - Build the upload zip: `bin/build-zip.sh` → `dist/travel-risk-<version>.zip`

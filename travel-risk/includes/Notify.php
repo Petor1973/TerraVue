@@ -1,6 +1,7 @@
 <?php
 /**
- * Notifications when the travel advice for a followed country changes.
+ * Notifications when the travel advice for a followed country changes, and when GDACS
+ * issues an orange or red disaster alert for it.
  *
  * An hourly cron job fetches the advice for every (source, country) pair that
  * users with notifications follow (each user's chosen source, see user_source()), compares level/maxLevel with the previous
@@ -23,6 +24,7 @@ class Notify {
 	const OPT_VAPID    = 'travel_risk_vapid';
 	const OPT_SNAPSHOT = 'travel_risk_snapshots';
 	const OPT_LAST     = 'travel_risk_last_check';
+	const OPT_ALERTS_SEEN = 'travel_risk_alerts_seen';
 	const CRON         = 'travel_risk_check';
 	const MAX_DEVICES  = 10;
 
@@ -96,7 +98,7 @@ class Notify {
 	// ------------------------------------------------------------------ change detection
 
 	/**
-	 * @return array{users:int, pairs:int, errors:int, changes:int, notified:int, news:int}
+	 * @return array{users:int, pairs:int, errors:int, changes:int, notified:int, alerts:int, news:int}
 	 */
 	public static function check( bool $prefetch = true ): array {
 		if ( function_exists( 'set_time_limit' ) ) {
@@ -112,18 +114,20 @@ class Notify {
 		) );
 
 		// (source, country) => users following it with that source.
-		$pairs = array();
+		$pairs  = array();
+		$by_iso = array(); // country => users following it (any source), for disaster alerts
 		foreach ( $users as $id ) {
 			$source = user_source( (int) $id );
 			foreach ( user_list( (int) $id, Auth::META_COUNTRIES ) as $iso ) {
 				$pairs[ "$source:$iso" ][] = (int) $id;
+				$by_iso[ $iso ][]          = (int) $id;
 			}
 		}
 
 		$old     = (array) get_option( self::OPT_SNAPSHOT, array() );
 		$new     = array();
 		$sources = sources();
-		$stats   = array( 'users' => count( $users ), 'pairs' => count( $pairs ), 'errors' => 0, 'changes' => 0, 'notified' => 0, 'news' => 0 );
+		$stats   = array( 'users' => count( $users ), 'pairs' => count( $pairs ), 'errors' => 0, 'changes' => 0, 'notified' => 0, 'alerts' => 0, 'news' => 0 );
 		foreach ( $pairs as $key => $followers ) {
 			list( $source, $iso ) = explode( ':', $key );
 			$country              = countries()[ $iso ] ?? null;
@@ -153,11 +157,73 @@ class Notify {
 		}
 		update_option( self::OPT_SNAPSHOT, $new, false );
 		update_option( self::OPT_LAST, time(), false );
+		$stats['alerts'] = self::check_alerts( $by_iso );
 
 		$isos           = array_unique( array_map( fn( $k ) => explode( ':', $k )[1], array_keys( $pairs ) ) );
 		$stats['news']  = $prefetch ? self::prefetch_news( $isos ) : 0;
 		update_option( self::OPT_LAST_STATS, $stats, false );
 		return $stats;
+	}
+
+	/**
+	 * Orange and red GDACS alerts for followed countries. Each user hears about an event once,
+	 * and again if it escalates (orange → red). The first run only records what is current,
+	 * like the advice baseline. Green alerts (minor) never notify.
+	 *
+	 * @param array<string,int[]> $by_iso Country => user IDs following it.
+	 * @return int Notifications sent.
+	 */
+	public static function check_alerts( array $by_iso ): int {
+		if ( ! setting( 'alerts' ) ) {
+			return 0;
+		}
+		try {
+			$events = disaster_alerts();
+		} catch ( SourceException $e ) {
+			return 0; // keep what we have seen; tried again next hour
+		}
+		$seen  = get_option( self::OPT_ALERTS_SEEN, null );
+		$first = ! is_array( $seen );
+		$seen  = (array) $seen;
+		$now   = array();
+		$todo  = array(); // user => event id => [event, country]
+		foreach ( $events as $event ) {
+			$rank = Alerts::LEVELS[ $event['level'] ];
+			if ( $rank < Alerts::LEVELS['orange'] ) {
+				continue;
+			}
+			$before              = (int) ( $seen[ $event['id'] ] ?? 0 );
+			$now[ $event['id'] ] = max( $rank, $before );
+			if ( $first || $before >= $rank ) {
+				continue;
+			}
+			foreach ( $event['countries'] as $iso ) {
+				foreach ( array_unique( $by_iso[ $iso ] ?? array() ) as $user ) {
+					$todo[ $user ][ $event['id'] ] = $todo[ $user ][ $event['id'] ] ?? array( $event, countries()[ $iso ] );
+				}
+			}
+		}
+		update_option( self::OPT_ALERTS_SEEN, $now, false );
+
+		$sent = 0;
+		foreach ( $todo as $user => $items ) {
+			$lang = language( get_user_meta( $user, Auth::META_LANG, true ) );
+			foreach ( $items as $id => list( $event, $country ) ) {
+				self::send( $user, self::alert_message( $lang, $country, $event ), 'gdacs-' . $id );
+				$sent++;
+			}
+		}
+		return $sent;
+	}
+
+	/** @return array{title:string, body:string} The GDACS text itself is in English. */
+	public static function alert_message( string $lang, array $country, array $event ): array {
+		$title = array(
+			'en' => 'Disaster alert: %s',
+			'de' => 'Katastrophenwarnung: %s',
+			'nl' => 'Rampenmelding: %s',
+		)[ language( $lang ) ];
+		return array( 'title' => sprintf( $title, $country[ language( $lang ) ] ), 'body' => $event['title'] . ' (GDACS)' );
 	}
 
 	const OPT_LAST_STATS = 'travel_risk_last_stats';
@@ -224,9 +290,19 @@ class Notify {
 
 	/** @return array{push:array{sent:int,failed:int}, email:bool} */
 	private static function notify_user( int $user_id, array $country, array $before, array $after, ?array $msg = null ): array {
+		$lang = language( get_user_meta( $user_id, Auth::META_LANG, true ) );
+		return self::send( $user_id, $msg ?? self::message( $lang, $country, $before, $after ), $country['iso3'] );
+	}
+
+	/**
+	 * Push to all of the user's devices, plus e-mail when that is on.
+	 *
+	 * @param string $tag Notifications with the same tag replace each other on the device.
+	 * @return array{push:array{sent:int,failed:int}, email:bool}
+	 */
+	private static function send( int $user_id, array $msg, string $tag ): array {
 		$lang   = language( get_user_meta( $user_id, Auth::META_LANG, true ) );
-		$msg    = $msg ?? self::message( $lang, $country, $before, $after );
-		$result = array( 'push' => self::push_user( $user_id, $msg + array( 'tag' => $country['iso3'] ) ), 'email' => false );
+		$result = array( 'push' => self::push_user( $user_id, $msg + array( 'tag' => $tag ) ), 'email' => false );
 
 		if ( '1' === get_user_meta( $user_id, self::META_EMAIL, true ) ) {
 			$user   = get_user_by( 'id', $user_id );

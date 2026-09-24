@@ -6,9 +6,10 @@
  *   3 = essential travel only (orange)   4 = do not travel (red)
  *
  * Every adapter returns:
- *   [ source, level, maxLevel, summary, url, updated ]
+ *   [ source, level, maxLevel, basis, summary, url, updated, latest ]
  * where `level` applies to most of the country and `maxLevel` is the strictest
- * level anywhere in the country (regional warnings).
+ * level anywhere in the country (regional warnings). `latest` is the government's own
+ * note on what changed in the last update, where the source publishes one (else null).
  *
  * No WordPress dependency: HTTP is injected as a callable
  *   fn(string $url): array{status:int, body:string}
@@ -134,6 +135,7 @@ class Sources {
 			'summary'  => self::shorten( $intro ),
 			'url'      => self::xml_field( $xml, 'canonical' ),
 			'updated'  => self::iso_date( self::xml_field( $xml, 'lastmodified' ) ),
+			'latest'   => self::after_label( self::text( str_replace( array( '<![CDATA[', ']]>' ), '', $xml ) ), '(?:Laatste wijziging|Wat is er veranderd\??)' ),
 		);
 	}
 
@@ -255,6 +257,8 @@ class Sources {
 			'summary'  => self::shorten( $summary ),
 			'url'      => 'https://www.gov.uk/foreign-travel-advice/' . $slug,
 			'updated'  => self::iso_date( $data['public_updated_at'] ?? null ),
+			// Usually "Latest update: ..."; the app shows its own label.
+			'latest'   => self::clip( preg_replace( '/^Latest update:?\s*/i', '', self::text( (string) ( $data['details']['change_description'] ?? '' ) ) ) ),
 		);
 	}
 
@@ -334,6 +338,7 @@ class Sources {
 			'summary'  => self::shorten( $text ),
 			'url'      => 'https://www.auswaertiges-amt.de/de/ReiseUndSicherheit/reise-und-sicherheitshinweise',
 			'updated'  => is_numeric( $updated ) ? gmdate( 'c', (int) ( $updated / 1000 ) ) : self::iso_date( $updated ),
+			'latest'   => self::after_label( $text, 'Letzte Änderungen?' ),
 		);
 	}
 
@@ -401,9 +406,16 @@ class Sources {
 				'summary'  => self::shorten( $text ),
 				'url'      => $item['link'],
 				'updated'  => self::iso_date( $item['pubDate'] ),
+				'latest'   => self::usdos_latest( $text ),
 			);
 		}
 		throw new SourceException( 'not_found' );
+	}
+
+	/** Advisories open with a note on the reissue: "Reissued after periodic review with minor edits." */
+	public static function usdos_latest( string $text ): ?string {
+		$first = preg_split( '/(?<=[.!])\s+/u', trim( $text ), 2 )[0] ?? '';
+		return preg_match( '/^(Reissued|Updated|Level (increased|decreased|raised|lowered)|Changed|Removed|Added)\b/i', $first ) ? self::clip( $first ) : null;
 	}
 
 	// ------------------------------------------------------------------
@@ -434,6 +446,7 @@ class Sources {
 			'summary'  => self::shorten( $text . '.' ),
 			'url'      => 'https://travel.gc.ca/destinations/' . ( $slug ?: '' ),
 			'updated'  => self::iso_date( $entry['date-published']['date'] ?? null ),
+			'latest'   => self::clip( self::text( (string) ( $eng['recent-updates'] ?? '' ) ) ),
 		);
 	}
 
@@ -465,6 +478,7 @@ class Sources {
 				'summary'  => self::shorten( trim( $overall . '. ' . $text, ' .' ) . '.' ),
 				'url'      => $item['link'],
 				'updated'  => self::iso_date( $item['pubDate'] ),
+				'latest'   => self::after_label( $text, 'Latest update' ),
 			);
 		}
 		throw new SourceException( 'not_found' );
@@ -580,6 +594,24 @@ class Sources {
 		$cut = mb_substr( $text, 0, $max );
 		$end = mb_strrpos( $cut, '. ' );
 		return ( $end > $max / 2 ? mb_substr( $cut, 0, $end + 1 ) : $cut ) . ' …';
+	}
+
+	/** Up to two sentences after a label such as "Latest update:" in plain text, or null. */
+	public static function after_label( string $text, string $label ): ?string {
+		if ( ! preg_match( '/\b' . $label . '\s*:?\s*(.+)$/isu', $text, $m ) ) {
+			return null;
+		}
+		$sentences = preg_split( '/(?<=[.!?])\s+/u', trim( $m[1] ), 3 );
+		return self::clip( implode( ' ', array_slice( $sentences, 0, 2 ) ) );
+	}
+
+	/** Short text for the "latest update" line; null when empty. */
+	public static function clip( string $text, int $max = 300 ): ?string {
+		$text = trim( $text );
+		if ( '' === $text ) {
+			return null;
+		}
+		return mb_strlen( $text ) > $max ? rtrim( mb_substr( $text, 0, $max ) ) . ' …' : $text;
 	}
 
 	public static function slug( string $name ): string {

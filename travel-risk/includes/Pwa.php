@@ -58,7 +58,7 @@ class Pwa {
 		return array(
 			'name'             => setting( 'brand_name' ),
 			'short_name'       => setting( 'brand_name' ),
-			'description'      => 'Travel advice and security news per country.',
+			'description'      => 'Official travel advice and disaster alerts per country.',
 			'id'               => wp_make_link_relative( app_url() ),
 			'start_url'        => self::start_url(),
 			'scope'            => home_url( '/' ),

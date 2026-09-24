@@ -121,8 +121,22 @@ ok( 'US has no advice for the US', 404 === call( 'GET', 'advice/USA', array( 'so
 ok( 'unknown country 404', 404 === call( 'GET', 'advice/XYZ' )->get_status() );
 ok( 'home country for source 404', 404 === call( 'GET', 'advice/NLD', array( 'lang' => 'nl' ) )->get_status() );
 
+$settings = get_option( 'travel_risk_settings', array() );
+update_option( 'travel_risk_settings', array( 'news_provider' => 'none' ) + (array) $settings );
+ok( 'news off by default (official updates and alerts only)', 404 === call( 'GET', 'news/SAU' )->get_status() );
+update_option( 'travel_risk_settings', array( 'news_provider' => 'gdelt' ) + (array) $settings );
 $r = call( 'GET', 'news/SAU' );
-ok( 'news', 200 === $r->get_status() && 2 === count( $r->get_data()['items'] ), $r->get_data() );
+ok( 'news (GDELT when switched on)', 200 === $r->get_status() && 2 === count( $r->get_data()['items'] ), $r->get_data() );
+
+// GDACS disaster alerts
+$r     = call( 'GET', 'alerts' );
+$items = $r->get_data()['items'] ?? array();
+ok( 'alerts: current GDACS events with our country codes', 200 === $r->get_status() && array( 'EQ9001', 'EQ9002' ) === array_column( $items, 'id' ) && array( 'SAU' ) === $items[0]['countries'] && 'orange' === $items[0]['level'], $r->get_data() );
+ok( 'alerts: feed cached', false !== get_transient( 'travel_risk_' . md5( 'alerts:gdacs' ) ) );
+update_option( 'travel_risk_settings', array( 'alerts' => 0 ) + (array) $settings );
+ok( 'alerts: can be switched off', 404 === call( 'GET', 'alerts' )->get_status() );
+update_option( 'travel_risk_settings', array( 'alerts' => 1 ) + (array) $settings );
+ok( 'advice carries the latest-update field', array_key_exists( 'latest', call( 'GET', 'advice/SAU', array( 'source' => 'usdos' ) )->get_data() ) );
 
 // PWA
 $page = (int) TravelRisk\setting( 'app_page_id' );
@@ -167,9 +181,11 @@ ok( 'e-mail notifications on', true === call( 'PUT', 'me', array( 'notifyEmail' 
 update_user_meta( $user->ID, TravelRisk\Auth::META_LANG, 'nl' );
 update_user_meta( $user->ID, TravelRisk\Auth::META_SOURCE, 'fcdo' ); // Dutch interface, UK advice
 delete_option( TravelRisk\Notify::OPT_SNAPSHOT );
+delete_option( TravelRisk\Notify::OPT_ALERTS_SEEN );
 $GLOBALS['travel_risk_pushes'] = array();
 @unlink( WP_CONTENT_DIR . '/last-mail.txt' );
 TravelRisk\Notify::check();
+ok( 'alerts: first check records current events without notifying', array( 'EQ9001' => 2 ) === get_option( TravelRisk\Notify::OPT_ALERTS_SEEN ), get_option( TravelRisk\Notify::OPT_ALERTS_SEEN ) );
 $snap = get_option( TravelRisk\Notify::OPT_SNAPSHOT );
 ok( 'baseline stored per chosen source and country', isset( $snap['fcdo:SAU'], $snap['fcdo:NOR'] ) && ! isset( $snap['buza:SAU'] ) && 2 === $snap['fcdo:SAU']['level'], $snap );
 ok( 'no notification on baseline', ! $GLOBALS['travel_risk_pushes'] && ! file_exists( WP_CONTENT_DIR . '/last-mail.txt' ) );
@@ -197,6 +213,24 @@ foreach ( explode( "\n-----\n", (string) @file_get_contents( WP_CONTENT_DIR . '/
 ok( 'change: e-mail sent in the user\'s language', str_starts_with( $mail, $email ) && str_contains( $mail, 'Reisadvies gewijzigd: Saoedi-Arabië' ) && str_contains( $mail, 'Let op → Niet reizen' ), $mail );
 ok( 'snapshot updated', 4 === get_option( TravelRisk\Notify::OPT_SNAPSHOT )['fcdo:SAU']['level'] );
 ok( 'app cache refreshed by check', 4 === call( 'GET', 'advice/SAU', array( 'lang' => 'en' ) )->get_data()['level'] );
+
+// GDACS: the orange alert in Saudi Arabia turns red -> one notification to followers
+TravelRisk\Notify::check( false ); // advice is back to normal after the raise above; settle that first
+$GLOBALS['travel_risk_gdacs_level'] = 'Red';
+delete_transient( 'travel_risk_' . md5( 'alerts:gdacs' ) );
+$GLOBALS['travel_risk_pushes'] = array();
+@unlink( WP_CONTENT_DIR . '/mail-log.txt' );
+$stats = TravelRisk\Notify::check( false );
+$mail  = '';
+foreach ( explode( "\n-----\n", (string) @file_get_contents( WP_CONTENT_DIR . '/mail-log.txt' ) ) as $m ) {
+	$mail = str_starts_with( $m, $email ) ? $m : $mail;
+}
+ok( 'alerts: escalation to red notifies by push and e-mail (NL)', 1 === count( array_filter( $GLOBALS['travel_risk_pushes'], fn( $p ) => str_contains( $p['url'], 'device-1' ) ) ) && str_contains( $mail, 'Rampenmelding: Saoedi-Arabië' ) && str_contains( $mail, 'Red earthquake alert' ) && 0 === $stats['changes'] && $stats['alerts'] >= 1, array( $stats, $mail ) );
+$GLOBALS['travel_risk_pushes'] = array();
+$stats = TravelRisk\Notify::check( false );
+ok( 'alerts: no repeat for the same event and level', 0 === $stats['alerts'] && ! $GLOBALS['travel_risk_pushes'], $stats );
+unset( $GLOBALS['travel_risk_gdacs_level'] );
+delete_transient( 'travel_risk_' . md5( 'alerts:gdacs' ) );
 
 $msg = TravelRisk\Notify::message( 'de', TravelRisk\countries()['SAU'], array( 'level' => 2, 'maxLevel' => 2 ), array( 'level' => 2, 'maxLevel' => 4 ) );
 ok( 'message for regional change (DE)', 'Reisehinweis geändert: Saudi-Arabien' === $msg['title'] && str_contains( $msg['body'], 'Erhöhte Vorsicht (max) → Reisewarnung (max)' ), $msg );
@@ -244,6 +278,7 @@ ok( 'update clears cached advice', false === get_transient( 'travel_risk_' . md5
 ok( 'update clears notification baseline', false === get_option( TravelRisk\Notify::OPT_SNAPSHOT ) );
 ok( 'update keeps sign-in tokens', false !== get_transient( 'travel_risk_tok_' . str_repeat( 'b', 64 ) ) );
 ok( 'version recorded', TravelRisk\VERSION === get_option( 'travel_risk_version' ) );
+update_option( 'travel_risk_settings', $settings );
 
 $failed = $GLOBALS['travel_risk_failed'];
 echo $failed ? "\n$failed FAILED\n" : "\nall passed\n";

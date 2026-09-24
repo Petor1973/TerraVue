@@ -9,10 +9,10 @@
   // ---------------------------------------------------------------- texts
   const T = {
     en: {
-      tagline: 'Travel advice and security news for the countries where your people work.',
+      tagline: 'Official travel advice and disaster alerts for the countries where your people work.',
       language: 'Language', search: 'Add a country, e.g. Saudi Arabia', searchLabel: 'Search country',
       refresh: 'Refresh', remove: 'Remove {name}', install: 'Install app',
-      empty: 'No countries yet. Type a country above to see its travel advice and recent news.',
+      empty: 'No countries yet. Type a country above to see its travel advice and current alerts.',
       sumNone: 'Add the countries where your people work.',
       sumLoading: '{n} countries selected, loading…',
       sumAttention: '{a} of {n} countries have an elevated risk level.',
@@ -30,6 +30,10 @@
       otherSources: 'Other governments', inLanguage: 'Summary in {lang}.', followSource: 'Follow the advice of {source} (for all countries)', basis: 'Why this level',
       sourceLang: { buza: 'Dutch', fcdo: 'English', aa: 'German', usdos: 'English', gac: 'English', dfat: 'English' },
       consensus: '{n} governments: most say “{most}”; strictest “{max}” ({who}).', regionalUnknown: 'Stricter advice applies to parts of the country. Check the regional details in the full advice.', regionalBadge: 'Regional warnings',
+      latest: 'Latest update', recentBadge: 'Recently updated',
+      gdacsTitle: 'Disaster alerts (GDACS)', gdacsNone: 'No current disaster alerts.', gdacsLang: 'Alert texts in English.',
+      hazard: { EQ: 'Earthquake', TC: 'Tropical cyclone', FL: 'Flood', VO: 'Volcano', DR: 'Drought', WF: 'Wildfire', TS: 'Tsunami' },
+      alertLevel: { green: 'Green alert', orange: 'Orange alert', red: 'Red alert' },
       allSources: 'Sources and licences', notEndorsed: 'Not affiliated with or endorsed by any government.',
       installMenu: 'Install as app', installTitle: 'Install {brand} as an app',
       installLead: 'Put {brand} on your home screen: it opens full screen like an app, works offline and can send you notifications.',
@@ -40,7 +44,7 @@
       installNow: 'Install', notNow: 'Not now', howTo: 'Show me how',
       codeLabel: 'Using the installed app? Enter the 6-digit code from the e-mail', codeButton: 'Sign in',
       alertsTitle: 'Notifications',
-      alertsLead: 'Get a message when the travel advice for one of your countries changes. The official advice is checked every hour.',
+      alertsLead: 'Get a message when the travel advice for one of your countries changes. The official advice is checked every hour.', alertsLeadGdacs: 'You also get a message when GDACS issues an orange or red disaster alert (earthquake, cyclone, flood, …) for one of your countries.',
       pushTitle: 'Push notifications on this device', pushOn: 'On for this device.', pushOff: 'Off for this device.',
       pushTest: 'Send test notification', pushTestSent: 'Test sent to {n} device(s).',
       pushAccount: 'Push is on for {n} device(s) of {email}. A test goes to all of them; devices signed in with another account do not receive it.',
@@ -63,7 +67,8 @@
       sentTitle: 'Check your inbox',
       sentText: 'If the address is valid, a sign-in link is on its way to {email}. It is valid for 30 minutes.',
       otherEmail: 'Use another address', signingIn: 'Signing in…',
-      footer: 'Travel advice: {source}. News: {news}, found automatically with security keywords in English-language media; not every item is relevant. Advice is normalised to four levels; always check the official advice for regional details.',
+      footer: 'Travel advice: {source}. Advice is normalised to four levels; always check the official advice for regional details.',
+      footerNews: 'News: {news}, found automatically with security keywords in English-language media; not every item is relevant.',
       err: {
         not_found: 'No travel advice available from this source.',
         no_home_advice: 'This source does not publish advice for its own country.',
@@ -80,10 +85,10 @@
       },
     },
     de: {
-      tagline: 'Reisehinweise und Sicherheitsnachrichten für die Länder, in denen Ihre Leute arbeiten.',
+      tagline: 'Offizielle Reisehinweise und Katastrophenwarnungen für die Länder, in denen Ihre Leute arbeiten.',
       language: 'Sprache', search: 'Land hinzufügen, z. B. Saudi-Arabien', searchLabel: 'Land suchen',
       refresh: 'Aktualisieren', remove: '{name} entfernen', install: 'App installieren',
-      empty: 'Noch keine Länder. Geben Sie oben ein Land ein, um Reisehinweise und aktuelle Nachrichten zu sehen.',
+      empty: 'Noch keine Länder. Geben Sie oben ein Land ein, um Reisehinweise und aktuelle Warnungen zu sehen.',
       sumNone: 'Fügen Sie die Länder hinzu, in denen Ihre Leute arbeiten.',
       sumLoading: '{n} Länder ausgewählt, wird geladen…',
       sumAttention: '{a} von {n} Ländern haben ein erhöhtes Risiko.',
@@ -101,6 +106,10 @@
       otherSources: 'Andere Regierungen', inLanguage: 'Zusammenfassung auf {lang}.', followSource: 'Hinweisen von {source} folgen (für alle Länder)', basis: 'Grundlage',
       sourceLang: { buza: 'Niederländisch', fcdo: 'Englisch', aa: 'Deutsch', usdos: 'Englisch', gac: 'Englisch', dfat: 'Englisch' },
       consensus: '{n} Regierungen: die meisten sagen „{most}“; am strengsten „{max}“ ({who}).', regionalUnknown: 'Für Teile des Landes gelten strengere Hinweise. Prüfen Sie die regionalen Angaben im vollständigen Hinweis.', regionalBadge: 'Regionale Warnungen',
+      latest: 'Letzte Änderung', recentBadge: 'Kürzlich geändert',
+      gdacsTitle: 'Katastrophenwarnungen (GDACS)', gdacsNone: 'Keine aktuellen Katastrophenwarnungen.', gdacsLang: 'Warntexte auf Englisch.',
+      hazard: { EQ: 'Erdbeben', TC: 'Tropischer Wirbelsturm', FL: 'Überschwemmung', VO: 'Vulkan', DR: 'Dürre', WF: 'Waldbrand', TS: 'Tsunami' },
+      alertLevel: { green: 'Grüne Warnung', orange: 'Orange Warnung', red: 'Rote Warnung' },
       allSources: 'Quellen und Lizenzen', notEndorsed: 'Nicht mit einer Regierung verbunden oder von ihr unterstützt.',
       installMenu: 'Als App installieren', installTitle: '{brand} als App installieren',
       installLead: 'Legen Sie {brand} auf Ihren Home-Bildschirm: Die App öffnet im Vollbild, funktioniert offline und kann Ihnen Benachrichtigungen senden.',
@@ -111,7 +120,7 @@
       installNow: 'Installieren', notNow: 'Später', howTo: 'Anleitung zeigen',
       codeLabel: 'Sie nutzen die installierte App? Geben Sie den 6-stelligen Code aus der E-Mail ein', codeButton: 'Anmelden',
       alertsTitle: 'Benachrichtigungen',
-      alertsLead: 'Erhalten Sie eine Nachricht, wenn sich der Reisehinweis für eines Ihrer Länder ändert. Die offiziellen Hinweise werden stündlich geprüft.',
+      alertsLead: 'Erhalten Sie eine Nachricht, wenn sich der Reisehinweis für eines Ihrer Länder ändert. Die offiziellen Hinweise werden stündlich geprüft.', alertsLeadGdacs: 'Sie erhalten auch eine Nachricht, wenn GDACS für eines Ihrer Länder eine orange oder rote Katastrophenwarnung (Erdbeben, Wirbelsturm, Überschwemmung, …) herausgibt.',
       pushTitle: 'Push-Benachrichtigungen auf diesem Gerät', pushOn: 'Auf diesem Gerät aktiv.', pushOff: 'Auf diesem Gerät aus.',
       pushTest: 'Testbenachrichtigung senden', pushTestSent: 'Test an {n} Gerät(e) gesendet.',
       pushAccount: 'Push ist für {n} Gerät(e) von {email} aktiv. Ein Test geht an alle; Geräte mit einem anderen Konto erhalten ihn nicht.',
@@ -135,7 +144,8 @@
       sentTitle: 'Prüfen Sie Ihr Postfach',
       sentText: 'Wenn die Adresse gültig ist, ist ein Anmeldelink an {email} unterwegs. Er ist 30 Minuten gültig.',
       otherEmail: 'Andere Adresse verwenden', signingIn: 'Anmeldung läuft…',
-      footer: 'Reisehinweise: {source}. Nachrichten: {news}, automatisch über Sicherheitsbegriffe in englischsprachigen Medien gefunden; nicht jede Meldung ist relevant. Hinweise sind auf vier Stufen vereinheitlicht; prüfen Sie für regionale Details immer den offiziellen Hinweis.',
+      footer: 'Reisehinweise: {source}. Hinweise sind auf vier Stufen vereinheitlicht; prüfen Sie für regionale Details immer den offiziellen Hinweis.',
+      footerNews: 'Nachrichten: {news}, automatisch über Sicherheitsbegriffe in englischsprachigen Medien gefunden; nicht jede Meldung ist relevant.',
       err: {
         not_found: 'Diese Quelle bietet für dieses Land keine Hinweise.',
         no_home_advice: 'Diese Quelle veröffentlicht keine Hinweise für das eigene Land.',
@@ -152,10 +162,10 @@
       },
     },
     nl: {
-      tagline: 'Reisadvies en veiligheidsnieuws voor de landen waar jouw mensen werken.',
+      tagline: 'Officieel reisadvies en rampenmeldingen voor de landen waar jouw mensen werken.',
       language: 'Taal', search: 'Land toevoegen, bv. Saoedi-Arabië', searchLabel: 'Land zoeken',
       refresh: 'Vernieuwen', remove: '{name} verwijderen', install: 'App installeren',
-      empty: 'Nog geen landen. Typ hierboven een land om het reisadvies en recent nieuws te zien.',
+      empty: 'Nog geen landen. Typ hierboven een land om het reisadvies en actuele meldingen te zien.',
       sumNone: 'Voeg de landen toe waar jouw mensen werken.',
       sumLoading: '{n} landen gekozen, gegevens worden opgehaald…',
       sumAttention: '{a} van de {n} landen hebben een verhoogd risico.',
@@ -173,6 +183,10 @@
       otherSources: 'Andere overheden', inLanguage: 'Samenvatting in het {lang}.', followSource: 'Advies van {source} volgen (voor alle landen)', basis: 'Waarom dit niveau',
       sourceLang: { buza: 'Nederlands', fcdo: 'Engels', aa: 'Duits', usdos: 'Engels', gac: 'Engels', dfat: 'Engels' },
       consensus: '{n} overheden: de meeste zeggen ‘{most}’; strengst ‘{max}’ ({who}).', regionalUnknown: 'Voor delen van het land geldt een strenger advies. Bekijk de regionale details in het volledige advies.', regionalBadge: 'Regionale waarschuwingen',
+      latest: 'Laatste wijziging', recentBadge: 'Recent gewijzigd',
+      gdacsTitle: 'Rampenmeldingen (GDACS)', gdacsNone: 'Geen actuele rampenmeldingen.', gdacsLang: 'Meldingsteksten in het Engels.',
+      hazard: { EQ: 'Aardbeving', TC: 'Tropische cycloon', FL: 'Overstroming', VO: 'Vulkaan', DR: 'Droogte', WF: 'Bosbrand', TS: 'Tsunami' },
+      alertLevel: { green: 'Groene melding', orange: 'Oranje melding', red: 'Rode melding' },
       allSources: 'Bronnen en licenties', notEndorsed: 'Niet verbonden aan of goedgekeurd door een overheid.',
       installMenu: 'Installeren als app', installTitle: '{brand} als app installeren',
       installLead: 'Zet {brand} op je beginscherm: de app opent schermvullend, werkt offline en kan je meldingen sturen.',
@@ -183,7 +197,7 @@
       installNow: 'Installeren', notNow: 'Niet nu', howTo: 'Laat zien hoe',
       codeLabel: 'Gebruik je de geïnstalleerde app? Vul de 6-cijferige code uit de e-mail in', codeButton: 'Inloggen',
       alertsTitle: 'Meldingen',
-      alertsLead: 'Krijg een bericht als het reisadvies voor een van je landen wijzigt. Het officiële advies wordt elk uur gecontroleerd.',
+      alertsLead: 'Krijg een bericht als het reisadvies voor een van je landen wijzigt. Het officiële advies wordt elk uur gecontroleerd.', alertsLeadGdacs: 'Je krijgt ook een bericht als GDACS een oranje of rode rampenmelding (aardbeving, cycloon, overstroming, …) geeft voor een van je landen.',
       pushTitle: 'Pushmeldingen op dit apparaat', pushOn: 'Aan op dit apparaat.', pushOff: 'Uit op dit apparaat.',
       pushTest: 'Testmelding sturen', pushTestSent: 'Test verstuurd naar {n} apparaat/apparaten.',
       pushAccount: 'Push staat aan voor {n} apparaat/apparaten van {email}. Een test gaat naar al die apparaten; apparaten met een ander account krijgen hem niet.',
@@ -206,7 +220,8 @@
       sentTitle: 'Kijk in je inbox',
       sentText: 'Als het adres geldig is, is er een inloglink onderweg naar {email}. De link is 30 minuten geldig.',
       otherEmail: 'Ander adres gebruiken', signingIn: 'Inloggen…',
-      footer: 'Reisadvies: {source}. Nieuws: {news}, automatisch gezocht op veiligheidstrefwoorden in Engelstalige media; niet elk bericht is relevant. Adviezen zijn omgezet naar vier niveaus; controleer voor regionale details altijd het officiële advies.',
+      footer: 'Reisadvies: {source}. Adviezen zijn omgezet naar vier niveaus; controleer voor regionale details altijd het officiële advies.',
+      footerNews: 'Nieuws: {news}, automatisch gezocht op veiligheidstrefwoorden in Engelstalige media; niet elk bericht is relevant.',
       err: {
         not_found: 'Deze bron heeft geen reisadvies voor dit land.',
         no_home_advice: 'Deze bron publiceert geen advies voor het eigen land.',
@@ -243,6 +258,7 @@
     return 'fcdo';
   }
   const NEWS = { gdelt: 'GDELT', google: 'Google News' };
+  const RECENT_DAYS = 3; // "Recently updated" badge
 
   // ---------------------------------------------------------------- state
   const KEY = { lang: 'travel-risk.lang', countries: 'travel-risk.countries', guide: 'travel-risk.install-guide', source: 'travel-risk.source' };
@@ -260,6 +276,7 @@
     selected: store.get(KEY.countries, []),
     advice: {},             // iso -> {loading} | data | {error}
     news: {},               // iso -> {loading} | data | {error}
+    gdacs: null,            // null | {loading} | {items: [...]} | {error}: all current GDACS alerts
     me: { loggedIn: false, registrationRequired: false },
     view: 'loading',        // loading | auth | sent | app
     open: new Set(),        // countries shown with full details
@@ -358,7 +375,21 @@
     });
   }
 
+  // One request for the whole world; tiles pick their country's alerts.
+  async function loadAlerts() {
+    if (!cfg.alerts) return;
+    if (!state.gdacs) state.gdacs = { loading: true };
+    try {
+      state.gdacs = await api('GET', 'alerts');
+    } catch (e) {
+      state.gdacs = { error: e.message };
+    }
+    render();
+  }
+  const alertsFor = iso => (state.gdacs && state.gdacs.items || []).filter(e => e.countries.includes(iso));
+
   function refreshAll() {
+    loadAlerts();
     state.selected.forEach(loadAdvice);
     state.selected.forEach(loadNews);
   }
@@ -651,7 +682,7 @@
     return h('div', { class: 'tr-app' },
       h('section', { class: 'tr-hero' },
         h('h1', {}, t('alertsTitle')),
-        h('p', { class: 'tr-lead' }, t('alertsLead'))),
+        h('p', { class: 'tr-lead' }, t('alertsLead') + (cfg.alerts ? ' ' + t('alertsLeadGdacs') : ''))),
       h('section', { class: 'tr-panel' },
         h('div', { class: 'tr-setting' },
           h('div', {}, h('h2', {}, t('pushTitle')), h('p', { class: 'tr-muted' }, pushText)),
@@ -760,11 +791,16 @@
     const lv = a.level || 0;
     const open = state.open.has(iso);
     const newsItems = n && n.items ? n.items.length : 0;
+    const gd = alertsFor(iso);
+    const severe = gd.find(e => e.level !== 'green');
+    const recent = a.updated && Date.now() - new Date(a.updated) < RECENT_DAYS * 864e5;
 
     const badges = h('span', { class: 'tr-badges' },
+      severe && h('span', { class: 'tr-badge gd-' + severe.level, title: severe.title }, t('hazard')[severe.type] || severe.type),
       a.maxLevel > a.level && h('span', { class: 'tr-badge lv' + a.maxLevel }, t('parts', { level: t('level')[a.maxLevel] })),
       !(a.maxLevel > a.level) && a.regional && h('span', { class: 'tr-badge lv3' }, t('regionalBadge')),
       newsItems > 0 && h('span', { class: 'tr-badge' }, t('newsCount', { n: newsItems })),
+      recent && h('span', { class: 'tr-badge' }, t('recentBadge')),
       a.error && h('span', { class: 'tr-badge' }, '!'));
 
     const head = h('h2', {},
@@ -793,6 +829,8 @@
       body.append(h('p', { class: 'tr-meta' },
         [a.updated && t('updated', { date: fmtDate(a.updated) }), t('source', { source: a.sourceName })].filter(Boolean).join(' · ')));
       // The raw data the level is based on, so users can check our reading of the source.
+      // The government's own note on what changed, where the source publishes one.
+      if (a.latest) body.append(h('p', { class: 'tr-latest' }, h('b', {}, t('latest') + ': '), a.latest));
       if (a.basis) body.append(h('p', { class: 'tr-meta tr-basis' }, h('b', {}, t('basis') + ': '), a.basis));
       const cmp = state.others[iso] || {};
       const verdict = consensus(a, cmp);
@@ -814,6 +852,20 @@
         h('p', {}, a.summary || ''),
         t('sourceLang')[state.source] && h('p', { class: 'tr-muted tr-small-print' }, t('inLanguage', { lang: t('sourceLang')[state.source] })),
         a.url && h('a', { href: a.url, target: '_blank', rel: 'noopener' }, t('fullAdvice'), ' ↗')));
+    }
+
+    if (cfg.alerts) {
+      const g = state.gdacs || { loading: true };
+      body.append(h('h3', {}, t('gdacsTitle')));
+      if (g.loading) body.append(h('p', { class: 'tr-muted' }, '…'));
+      else if (g.error) body.append(h('p', { class: 'tr-error' }, errText(g.error)));
+      else if (!gd.length) body.append(h('p', { class: 'tr-muted' }, t('gdacsNone')));
+      else {
+        body.append(h('ul', { class: 'tr-news tr-gdacs' }, gd.map(e =>
+          h('li', { class: 'gd-' + e.level }, h('a', { href: e.url, target: '_blank', rel: 'noopener' }, e.title),
+            h('span', {}, [t('alertLevel')[e.level], t('hazard')[e.type] || e.type, ago(e.to || e.from)].filter(Boolean).join(' · '))))));
+        if (state.lang !== 'en') body.append(h('p', { class: 'tr-muted tr-small-print' }, t('gdacsLang')));
+      }
     }
 
     if (cfg.news && n) {
@@ -865,10 +917,11 @@
       state.updatedAt && h('p', { class: 'tr-muted tr-stamp' },
         t('updatedAt', { time: state.updatedAt.toLocaleTimeString(LOCALE[state.lang], { hour: '2-digit', minute: '2-digit' }) })),
       h('footer', { class: 'tr-foot' },
-        h('p', {}, t('footer', { source: SOURCE[state.source], news: NEWS[cfg.news] || '—' })),
+        h('p', {}, t('footer', { source: SOURCE[state.source] }), cfg.news && ' ' + t('footerNews', { news: NEWS[cfg.news] })),
         h('p', {}, cfg.credits[state.source], ' ', t('notEndorsed')),
         h('details', {}, h('summary', {}, t('allSources')),
           h('ul', {}, SOURCES.map(src => h('li', {}, cfg.credits[src])),
+            cfg.alerts && h('li', {}, cfg.alertsCredit),
             cfg.news === 'gdelt' && h('li', {}, 'News: The GDELT Project (gdeltproject.org).')))));
   }
 

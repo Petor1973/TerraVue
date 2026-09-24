@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:       Terravue – Travel Risk Monitor
- * Description:       Official travel advice (NL, UK, DE, US, CA, AU) and recent security news per country, as an installable web app. Place the shortcode [travel_risk] on a page.
- * Version:           0.7.0
+ * Description:       Official travel advice (NL, UK, DE, US, CA, AU) and disaster alerts (GDACS) per country, as an installable web app. Place the shortcode [travel_risk] on a page.
+ * Version:           0.8.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Peter Langerak
@@ -14,7 +14,7 @@ namespace TravelRisk;
 
 defined( 'ABSPATH' ) || exit;
 
-const VERSION = '0.7.0';
+const VERSION = '0.8.0';
 const FILE    = __FILE__;
 const DIR     = __DIR__;
 
@@ -23,6 +23,7 @@ const LANGUAGES = array( 'en', 'de', 'nl' );
 
 require_once DIR . '/includes/Sources.php';
 require_once DIR . '/includes/News.php';
+require_once DIR . '/includes/Alerts.php';
 require_once DIR . '/includes/WebPush.php';
 require_once DIR . '/includes/Notify.php';
 require_once DIR . '/includes/Auth.php';
@@ -43,7 +44,8 @@ function defaults(): array {
 		'color_primary'        => '#0e3a53',
 		'color_accent'         => '#12a38a',
 		'require_registration' => 1,
-		'news_provider'        => 'gdelt',
+		'news_provider'        => 'none', // official updates + GDACS first; GDELT/Google News are opt-in
+		'alerts'               => 1,      // GDACS disaster alerts
 		'cache_minutes'        => 60,
 		'news_hours'           => 48,
 		'app_page_id'          => 0,
@@ -111,6 +113,24 @@ function sources(): Sources {
 	return new Sources( __NAMESPACE__ . '\\http_get', __NAMESPACE__ . '\\cached' );
 }
 
+/**
+ * Current GDACS disaster alerts for the countries we list, shared by the app and the hourly
+ * check. One feed for the whole world, re-read every Alerts::CACHE_MINUTES.
+ */
+function disaster_alerts(): array {
+	return cached(
+		'alerts:gdacs',
+		function () {
+			$res = http_get( Alerts::FEED, 20 );
+			if ( $res['status'] < 200 || $res['status'] >= 300 ) {
+				throw new SourceException( 'http_' . $res['status'] );
+			}
+			return Alerts::parse( $res['body'], countries(), time() );
+		},
+		Alerts::CACHE_MINUTES
+	);
+}
+
 /** Caches successful results only; failures are retried on the next request. */
 function cached( string $key, callable $fn, ?int $minutes = null ) {
 	$key = 'travel_risk_' . md5( $key );
@@ -173,6 +193,7 @@ function uninstall(): void {
 	delete_option( Notify::OPT_SNAPSHOT );
 	delete_option( Notify::OPT_LAST );
 	delete_option( Notify::OPT_LAST_STATS );
+	delete_option( Notify::OPT_ALERTS_SEEN );
 	delete_option( 'travel_risk_gdelt_last' );
 	delete_option( 'travel_risk_version' );
 	Notify::unschedule();

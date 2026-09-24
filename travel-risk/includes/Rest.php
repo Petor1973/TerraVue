@@ -3,7 +3,8 @@
  * REST API, namespace travel-risk/v1.
  *
  *   GET    /advice/{ISO3}?source=   Travel advice from buza | fcdo | aa | usdos | gac | dfat (or ?lang= for its default source)
- *   GET    /news/{ISO3}             Recent security news
+ *   GET    /news/{ISO3}             Recent security news (only when a news provider is on)
+ *   GET    /alerts                  Current GDACS disaster alerts, all listed countries
  *   GET    /me                      Signed-in state, saved countries and language
  *   PUT    /me                      Save countries, language, advice source, e-mail notifications
  *   DELETE /me                      Delete own account and data
@@ -48,6 +49,11 @@ class Rest {
 		register_rest_route( self::NS, "/news/$iso", array(
 			'methods'             => 'GET',
 			'callback'            => array( self::class, 'news' ),
+			'permission_callback' => array( self::class, 'can_read' ),
+		) );
+		register_rest_route( self::NS, '/alerts', array(
+			'methods'             => 'GET',
+			'callback'            => array( self::class, 'alerts' ),
 			'permission_callback' => array( self::class, 'can_read' ),
 		) );
 		register_rest_route( self::NS, '/me', array(
@@ -170,6 +176,17 @@ class Rest {
 			return self::fail( $e );
 		}
 		return rest_ensure_response( $data + array( 'hours' => (int) setting( 'news_hours' ) ) );
+	}
+
+	public static function alerts() {
+		if ( ! setting( 'alerts' ) ) {
+			return new \WP_Error( 'alerts_disabled', 'alerts_disabled', array( 'status' => 404 ) );
+		}
+		try {
+			return rest_ensure_response( array( 'items' => disaster_alerts() ) );
+		} catch ( SourceException $e ) {
+			return self::fail( $e );
+		}
 	}
 
 	/**

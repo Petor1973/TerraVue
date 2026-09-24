@@ -70,6 +70,8 @@ class Frontend {
 					'credits'    => Sources::ATTRIBUTION,
 					'privacyUrl' => get_privacy_policy_url(),
 					'news'       => 'none' === setting( 'news_provider' ) ? false : setting( 'news_provider' ),
+					'alerts'     => (bool) setting( 'alerts' ),
+					'alertsCredit' => Alerts::ATTRIBUTION,
 				)
 			) . ';',
 			'before'

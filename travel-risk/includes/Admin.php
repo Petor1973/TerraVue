@@ -294,6 +294,9 @@ class Admin {
 		if ( ! $country ) {
 			self::back( self::SOURCES, 'Unknown country.' );
 		}
+		if ( function_exists( 'set_time_limit' ) ) {
+			@set_time_limit( 180 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors -- six sources plus a probe, some slow
+		}
 		$fresh = new Sources( __NAMESPACE__ . '\\http_get' );
 		$rows  = array();
 		foreach ( array_keys( Sources::NAMES ) as $id ) {
@@ -302,7 +305,7 @@ class Admin {
 				$a      = $fresh->advice( $id, $country );
 				$rows[] = array( 'id' => $id, 'level' => $a['level'], 'max' => $a['maxLevel'], 'regional' => ! empty( $a['regional'] ), 'basis' => $a['basis'] ?? '', 'latest' => $a['latest'] ?? '', 'updated' => $a['updated'] ?? '', 'url' => $a['url'] ?? '', 'error' => '' );
 			} catch ( SourceException $e ) {
-				$rows[] = array( 'id' => $id, 'error' => $e->getMessage() );
+				$rows[] = array( 'id' => $id, 'error' => $e->getMessage() . ( $e->detail ? ' — ' . $e->detail : '' ) );
 			} catch ( \Throwable $e ) {
 				$rows[] = array( 'id' => $id, 'error' => 'PHP error: ' . $e->getMessage() );
 			}
@@ -319,7 +322,24 @@ class Admin {
 				$alerts = $e->getMessage();
 			}
 		}
-		self::back( self::SOURCES, array( 'country' => $country, 'rows' => $rows, 'alerts' => $alerts ) );
+		self::back( self::SOURCES, array( 'country' => $country, 'rows' => $rows, 'alerts' => $alerts, 'probe' => self::probe( Sources::DFAT_EXPORT ) ) );
+	}
+
+	/** What an endpoint answers: status, type, size, time and the start of the body (to build a parser). */
+	private static function probe( string $url ): array {
+		$start = microtime( true );
+		$res   = wp_remote_get( $url, array( 'timeout' => 20, 'user-agent' => 'TravelRisk/' . VERSION . '; ' . home_url( '/' ) ) );
+		$out   = array( 'url' => $url, 'ms' => (int) ( ( microtime( true ) - $start ) * 1000 ) );
+		if ( is_wp_error( $res ) ) {
+			return $out + array( 'error' => $res->get_error_message() );
+		}
+		$body = (string) wp_remote_retrieve_body( $res );
+		return $out + array(
+			'status' => (int) wp_remote_retrieve_response_code( $res ),
+			'type'   => (string) wp_remote_retrieve_header( $res, 'content-type' ),
+			'bytes'  => strlen( $body ),
+			'start'  => mb_substr( $body, 0, 1500 ),
+		);
 	}
 
 	public static function sources_page(): void {
@@ -390,6 +410,20 @@ class Admin {
 							<li><strong><?php echo esc_html( ucfirst( $e['level'] ) ); ?></strong> <a href="<?php echo esc_url( $e['url'] ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $e['title'] ); ?></a></li>
 						<?php endforeach; ?>
 						</ul>
+					<?php endif; ?>
+				<?php endif; ?>
+				<?php if ( ! empty( $result['probe'] ) ) : $pr = $result['probe']; ?>
+					<h3>Diagnostics: Australian export API</h3>
+					<p><code><?php echo esc_html( $pr['url'] ); ?></code> —
+						<?php if ( ! empty( $pr['error'] ) ) : ?>
+							<strong style="color:#b32d2e"><?php echo esc_html( $pr['error'] ); ?></strong>
+						<?php else : ?>
+							HTTP <?php echo (int) $pr['status']; ?>, <?php echo esc_html( $pr['type'] ); ?>, <?php echo esc_html( size_format( $pr['bytes'] ) ?: '0 B' ); ?>
+						<?php endif; ?>
+						(<?php echo (int) $pr['ms']; ?> ms)</p>
+					<?php if ( ! empty( $pr['start'] ) ) : ?>
+						<p class="description">Start of the answer (send a screenshot of this to add the official API as a source):</p>
+						<pre style="white-space:pre-wrap;max-width:1100px;max-height:320px;overflow:auto;background:#fff;border:1px solid #c3c4c7;padding:8px"><?php echo esc_html( $pr['start'] ); ?></pre>
 					<?php endif; ?>
 				<?php endif; ?>
 				<p class="description">Errors: <code>no_home_advice</code> = a government gives no advice for its own country; <code>not_found</code> = the country is not in that source; <code>http_403</code> = the source refused the request (e.g. bot protection); <code>unreachable</code> = no connection or time-out.</p>

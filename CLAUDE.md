@@ -125,6 +125,9 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 
 - De JSON-API van de VS (`cadataapi.state.gov/api/TravelAdvisories`) is sinds sept. 2026 leeg; de RSS-feed werkt.
   travel.state.gov zit achter Cloudflare: nooit omzeilen (geen nep-user-agent). Bij 403: bron tijdelijk niet beschikbaar.
+- AU: de RSS-feed liep live vast (time-out, ook na 30 s). DFAT heeft een officiële export
+  `smartraveller.gov.au/destinations-export` (formaat onbekend); Sources-pagina toont een diagnose (status,
+  type, begin van het antwoord) om daar een parser op te bouwen. `unreachable` toont nu ook de cURL-fout.
 - Hele feeds (VS, CA, AU, AA-lijst) worden één keer opgehaald en gedeeld gecachet (`sources()` → `cached('feed:…')`), time-out 30 s (AU-feed is traag).
 - Landnamen in feeds wijken af ("Burma (Myanmar)", "Mainland China, Hong Kong & Macau", "Türkiye"):
   `Sources::name_matches()` + `alt`-aliassen in countries.json. Bij een nieuw land zonder treffer: alias toevoegen + test.

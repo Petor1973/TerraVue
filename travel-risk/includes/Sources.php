@@ -20,7 +20,17 @@ namespace TravelRisk;
 
 defined( 'ABSPATH' ) || defined( 'TRAVEL_RISK_TESTING' ) || exit;
 
-class SourceException extends \RuntimeException {}
+class SourceException extends \RuntimeException {
+
+	/** Technical detail for administrators (e.g. the cURL error); the message stays a short code. */
+	public string $detail = '';
+
+	public static function with( string $code, string $detail ): self {
+		$e         = new self( $code );
+		$e->detail = $detail;
+		return $e;
+	}
+}
 
 class Sources {
 
@@ -32,6 +42,9 @@ class Sources {
 	const USDOS = 'https://travel.state.gov/_res/rss/TAsTWs.xml';
 	const GAC   = 'https://data.international.gc.ca/travel-voyage/index-alpha-eng.json';
 	const DFAT  = 'https://www.smartraveller.gov.au/countries/documents/index.rss';
+	// Official export announced by DFAT (smartraveller.gov.au/consular-services/resources); format not
+	// yet verified, so it is only probed on the admin Sources page for now.
+	const DFAT_EXPORT = 'https://www.smartraveller.gov.au/destinations-export';
 
 	/** Default source for a UI language, when the user has not chosen one. */
 	const BY_LANGUAGE = array(

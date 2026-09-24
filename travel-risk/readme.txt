@@ -1,7 +1,7 @@
 === Terravue – Travel Risk Monitor ===
 Requires at least: 6.4
 Requires PHP: 8.0
-Stable tag: 0.8.1
+Stable tag: 0.8.2
 License: Proprietary
 
 Official travel advice and disaster alerts per country, as an installable web app (PWA).

@@ -111,7 +111,7 @@ $d = call( 'GET', 'advice/SAU', array( 'lang' => 'de' ) )->get_data();
 ok( 'advice de = Auswärtiges Amt', 'aa' === $d['source'] && 4 === $d['maxLevel'], $d );
 $d = call( 'GET', 'advice/SAU', array( 'lang' => 'nl' ) )->get_data();
 ok( 'advice nl = BuZa', 'buza' === $d['source'] && 2 === $d['level'] && 4 === $d['maxLevel'], $d );
-foreach ( array( 'usdos' => array( 3, 4 ), 'gac' => array( 2, 2 ), 'dfat' => array( 2, 4 ) ) as $src => $want ) {
+foreach ( array( 'usdos' => array( 3, 4 ), 'gac' => array( 2, 2 ) ) as $src => $want ) {
 	$d = call( 'GET', 'advice/SAU', array( 'source' => $src ) )->get_data();
 	ok( "advice $src for Saudi Arabia", $src === ( $d['source'] ?? '' ) && $want === array( $d['level'], $d['maxLevel'] ), $d );
 }
@@ -119,6 +119,7 @@ ok( 'canada flags regional advisories', true === call( 'GET', 'advice/SAU', arra
 ok( 'whole feed cached once for all countries', false !== get_transient( 'travel_risk_' . md5( 'feed:' . TravelRisk\Sources::USDOS ) ) );
 ok( 'US has no advice for the US', 404 === call( 'GET', 'advice/USA', array( 'source' => 'usdos' ) )->get_status() );
 ok( 'unknown country 404', 404 === call( 'GET', 'advice/XYZ' )->get_status() );
+ok( 'Australia is no longer a source', 400 === call( 'GET', 'advice/SAU', array( 'source' => 'dfat' ) )->get_status() );
 ok( 'home country for source 404', 404 === call( 'GET', 'advice/NLD', array( 'lang' => 'nl' ) )->get_status() );
 
 $settings = get_option( 'travel_risk_settings', array() );

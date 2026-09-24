@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:       Terravue – Travel Risk Monitor
- * Description:       Official travel advice (NL, UK, DE, US, CA, AU) and disaster alerts (GDACS) per country, as an installable web app. Place the shortcode [travel_risk] on a page.
- * Version:           0.8.2
+ * Description:       Official travel advice (NL, UK, DE, US, CA) and disaster alerts (GDACS) per country, as an installable web app. Place the shortcode [travel_risk] on a page.
+ * Version:           0.9.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Peter Langerak
@@ -14,7 +14,7 @@ namespace TravelRisk;
 
 defined( 'ABSPATH' ) || exit;
 
-const VERSION = '0.8.2';
+const VERSION = '0.9.0';
 const FILE    = __FILE__;
 const DIR     = __DIR__;
 
@@ -108,7 +108,7 @@ function http_get( string $url, int $timeout = 15 ): array {
 	);
 }
 
-/** Sources with the WordPress HTTP API and a shared cache for whole feeds (US, CA, AU, DE list). */
+/** Sources with the WordPress HTTP API and a shared cache for whole feeds (US, CA, DE list). */
 function sources(): Sources {
 	return new Sources( __NAMESPACE__ . '\\http_get', __NAMESPACE__ . '\\cached' );
 }

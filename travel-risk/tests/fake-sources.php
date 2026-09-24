@@ -22,11 +22,6 @@ add_filter('pre_http_request', function ($pre, $args, $url) {
     'NO' => ['advisory-state' => 0, 'has-regional-advisory' => 0, 'eng' => ['url-slug' => 'norway', 'advisory-text' => 'Take normal security precautions']],
     'IQ' => ['advisory-state' => 3, 'has-regional-advisory' => 0, 'eng' => ['url-slug' => 'iraq', 'advisory-text' => 'Avoid all travel']],
   ]]));
-  if (str_contains($url, 'smartraveller.gov.au/countries/documents')) return $ok('<rss xmlns:ta="x"><channel>'
-    .'<item><title>Saudi Arabia</title><link>https://www.smartraveller.gov.au/destinations/middle-east/saudi-arabia</link><description>Exercise a high degree of caution. Do not travel to within 10km of the border with Yemen.</description><ta:warnings><ta:level>3/5</ta:level><ta:description>Exercise a high degree of caution</ta:description></ta:warnings></item>'
-    .'<item><title>Norway</title><link>https://www.smartraveller.gov.au/destinations/europe/norway</link><description>Normal.</description><ta:warnings><ta:level>2/5</ta:level><ta:description>Exercise normal safety precautions</ta:description></ta:warnings></item>'
-    .'<item><title>Iraq</title><link>https://www.smartraveller.gov.au/destinations/middle-east/iraq</link><description>Do not travel.</description><ta:warnings><ta:level>5/5</ta:level><ta:description>Do not travel</ta:description></ta:warnings></item>'
-    .'</channel></rss>');
   if (str_contains($url, 'gdacs.org/xml/rss.xml')) return $ok(travel_risk_fake_gdacs());
   if (str_contains($url, 'gdeltproject')) return $ok(json_encode(['articles'=>[['title'=>'Drone intercepted over eastern province','url'=>'https://example.com/1','domain'=>'example.com','seendate'=>gmdate('Ymd\THis\Z', time()-7200)],['title'=>'Protest reported in capital','url'=>'https://example.com/2','domain'=>'news.example','seendate'=>gmdate('Ymd\THis\Z', time()-20000)]]]));
   return $pre;

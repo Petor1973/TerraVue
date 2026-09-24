@@ -41,10 +41,6 @@ class Sources {
 	// Sept 2026; the RSS feed carries one item per destination with the level.
 	const USDOS = 'https://travel.state.gov/_res/rss/TAsTWs.xml';
 	const GAC   = 'https://data.international.gc.ca/travel-voyage/index-alpha-eng.json';
-	const DFAT  = 'https://www.smartraveller.gov.au/countries/documents/index.rss';
-	// Official export announced by DFAT (smartraveller.gov.au/consular-services/resources); format not
-	// yet verified, so it is only probed on the admin Sources page for now.
-	const DFAT_EXPORT = 'https://www.smartraveller.gov.au/destinations-export';
 
 	/** Default source for a UI language, when the user has not chosen one. */
 	const BY_LANGUAGE = array(
@@ -59,11 +55,10 @@ class Sources {
 		'aa'    => 'Auswärtiges Amt (DE)',
 		'usdos' => 'U.S. Department of State (US)',
 		'gac'   => 'Global Affairs Canada (CA)',
-		'dfat'  => 'Smartraveller, DFAT (AU)',
 	);
 
 	/** Each government publishes no advice for its own country. */
-	const HOME = array( 'buza' => 'NLD', 'fcdo' => 'GBR', 'aa' => 'DEU', 'usdos' => 'USA', 'gac' => 'CAN', 'dfat' => 'AUS' );
+	const HOME = array( 'buza' => 'NLD', 'fcdo' => 'GBR', 'aa' => 'DEU', 'usdos' => 'USA', 'gac' => 'CAN' );
 
 	/** Licence / attribution per source, shown in the app footer and the readme. */
 	const ATTRIBUTION = array(
@@ -72,7 +67,6 @@ class Sources {
 		'aa'    => 'Reise- und Sicherheitshinweise: Auswärtiges Amt, Open-Data-Schnittstelle.',
 		'usdos' => 'Travel advisories: U.S. Department of State, Bureau of Consular Affairs (public domain).',
 		'gac'   => 'Contains information licensed under the Open Government Licence – Canada (Global Affairs Canada).',
-		'dfat'  => 'Travel advice: Smartraveller, Australian Government Department of Foreign Affairs and Trade.',
 	);
 
 	/** @var callable */
@@ -109,8 +103,6 @@ class Sources {
 				return self::parse_usdos( $this->feed( self::USDOS ), $country );
 			case 'gac':
 				return self::parse_gac( $this->feed( self::GAC ), $country );
-			case 'dfat':
-				return self::parse_dfat( $this->feed( self::DFAT ), $country );
 			case 'buza':
 				return $this->buza( $country );
 			case 'aa':
@@ -463,41 +455,7 @@ class Sources {
 		);
 	}
 
-	// ------------------------------------------------------------------
-	// Australia: Smartraveller RSS. The overall advice is in <ta:warnings><ta:description>;
-	// stricter regional advice only appears in the text ("Do not travel to ...").
-	// ------------------------------------------------------------------
-
-	public static function parse_dfat( string $xml, array $country ): array {
-		foreach ( self::rss_items( $xml ) as $item ) {
-			$slug = basename( (string) parse_url( $item['link'], PHP_URL_PATH ) );
-			if ( ! self::name_matches( $item['title'], $country ) && ! self::name_matches( str_replace( '-', ' ', $slug ), $country ) ) {
-				continue;
-			}
-			$overall = preg_match( '/<ta:description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/ta:description>/', $item['raw'], $d ) ? self::text( $d[1] ) : '';
-			$level   = self::level_from_phrase( $overall );
-			$text    = self::text( $item['description'] );
-			$max     = $level;
-			if ( preg_match( '/do not travel to\b/i', $text ) ) {
-				$max = 4;
-			} elseif ( preg_match( '/reconsider your need to travel to\b/i', $text ) ) {
-				$max = max( (int) $max, 3 );
-			}
-			return array(
-				'source'   => 'dfat',
-				'level'    => $level,
-				'basis'    => $overall,
-				'maxLevel' => $level ? max( $level, $max ) : null,
-				'summary'  => self::shorten( trim( $overall . '. ' . $text, ' .' ) . '.' ),
-				'url'      => $item['link'],
-				'updated'  => self::iso_date( $item['pubDate'] ),
-				'latest'   => self::after_label( $text, 'Latest update' ),
-			);
-		}
-		throw new SourceException( 'not_found' );
-	}
-
-	/** The four-step wording Canada, Australia and the US use. */
+	/** The four-step wording Canada and the US use. */
 	public static function level_from_phrase( string $text ): ?int {
 		$t = strtolower( $text );
 		if ( preg_match( '/do not travel|avoid all travel/', $t ) && ! preg_match( '/non-essential|but essential/', $t ) ) {
@@ -560,10 +518,10 @@ class Sources {
 	// Helpers
 	// ------------------------------------------------------------------
 
-	/** Seconds for large feeds (the Australian one is slow); single pages use the default. */
+	/** Seconds for whole feeds, which are large; single pages use the default. */
 	const FEED_TIMEOUT = 30;
 
-	/** Whole feeds (US, Canada, Australia, AA list) are fetched once and shared by all countries. */
+	/** Whole feeds (US, Canada, AA list) are fetched once and shared by all countries. */
 	private function feed( string $url ): string {
 		if ( isset( $this->feeds[ $url ] ) ) {
 			return $this->feeds[ $url ];

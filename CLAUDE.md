@@ -26,7 +26,7 @@ Code en commentaar: Engels.
   (beheerders, redacteuren) kunnen nooit via link of code inloggen.
 - **Push** alleen naar bekende pushdiensten (`Notify::PUSH_HOSTS`: Google, Mozilla, Apple, Microsoft), nooit
   naar willekeurige URL's (SSRF). Payload altijd versleuteld (RFC 8291), VAPID-sleutels per site in een option.
-- **Bronnen/licenties.** Reisadvies van zes overheden (zie tabel "Bronnen en licenties"); bronvermelding per
+- **Bronnen/licenties.** Reisadvies van vijf overheden (zie tabel "Bronnen en licenties"); bronvermelding per
   bron in de app-footer (`Sources::ATTRIBUTION`), plus "niet verbonden aan een overheid". Rampen: GDACS (`Alerts::ATTRIBUTION`).
   Nieuws standaard uit; GDELT optioneel. Google News RSS is alleen voor persoonlijk, niet-commercieel gebruik —
   ook níet voor intern gebruik in een team op het werk; dan een gelicentieerde nieuwsbron kiezen.
@@ -92,20 +92,20 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
   "tussen X en Y". **Bij twijfel: testgeval toevoegen** (Israël-teksten staan als voorbeeld in de tests).
 - Elk advies heeft `latest`: de eigen notitie van de overheid over de laatste wijziging, waar de bron die
   levert (FCDO `details.change_description`, VS eerste zin "Reissued/Updated …", CA `recent-updates`,
-  AU "Latest update:", AA "Letzte Änderungen:", BuZa "Wat is er veranderd?"); anders null. Getoond als
+  AA "Letzte Änderungen:", BuZa "Wat is er veranderd?"); anders null. Getoond als
   "Laatste wijziging" in de uitgeklapte tegel; badge "Recent gewijzigd" als `updated` < 3 dagen oud is.
 - Elk advies heeft `basis`: de ruwe gegevens waarop het niveau berust (alert_status, AA-vlaggen + zin,
-  beslissende BuZa-zin, US-titel, CA advisory-state, AU-omschrijving). De app toont dit als "Waarom dit niveau",
+  beslissende BuZa-zin, US-titel, CA advisory-state). De app toont dit als "Waarom dit niveau",
   zodat afwijkingen live te controleren zijn.
 - **Na een plugin-update** (`maybe_upgrade()`, versie in option `travel_risk_version`): gecachet advies en de
   meldingen-nulmeting worden gewist, zodat parserverbeteringen geen valse "advies gewijzigd"-meldingen geven.
   Versie dus bij elke wijziging in de interpretatie ophogen.
-- **Bron = keuze van de gebruiker** ("Advies van NL · UK · DE · US · CA · AU"), los van de UI-taal: het advies van de overheid
+- **Bron = keuze van de gebruiker** ("Advies van NL · UK · DE · US · CA"), los van de UI-taal: het advies van de overheid
   van je nationaliteit/werkgever (daar hangt ook je reisverzekering aan). **Nooit op locatie** (AVG, geen
   tracking; en inhoudelijk fout: advies hangt af van wie je bent, niet waar je bent). Standaard uit de
-  regio-instelling van de browser (`nl-NL` → NL, `de-*` → DE, `-US` → US, `-CA` → CA, `-AU` → AU, anders UK), client-side; opgeslagen in
+  regio-instelling van de browser (`nl-NL` → NL, `de-*` → DE, `-US` → US, `-CA` → CA, anders UK), client-side; opgeslagen in
   localStorage en user meta `travel_risk_source`; meldingen volgen dezelfde bron (`user_source()`).
-  Uitgeklapte tegel toont de niveaus van de andere vijf overheden en de consensus ter vergelijking.
+  Uitgeklapte tegel toont de niveaus van de andere vier overheden en de consensus ter vergelijking.
 - Een bron geeft geen advies voor het eigen land. Samenvatting staat in de taal van de bron.
 
 ## Bronnen en licenties
@@ -117,7 +117,6 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 | aa | Duitsland, Auswärtiges Amt | opendata/travelwarning (+ detail) | booleans | open data — **licentie nog verifiëren** |
 | usdos | VS, State Department | `travel.state.gov/_res/rss/TAsTWs.xml` (één feed) | "Level N" in titel; regionaal uit tekst | publiek domein, bronvermelding gewaardeerd |
 | gac | Canada, Global Affairs | `data.international.gc.ca/travel-voyage/index-alpha-eng.json` | `advisory-state` 0–3 (+1); `has-regional-advisory` zonder niveau → `regional: true` | Open Government Licence – Canada |
-| dfat | Australië, Smartraveller | `smartraveller.gov.au/countries/documents/index.rss` | `<ta:description>` (tekst → niveau); regionaal uit tekst | **licentie nog verifiëren** (vermoedelijk CC BY) |
 | gdacs | EU-Commissie (JRC) + VN, rampen | `www.gdacs.org/xml/rss.xml` (één feed, 30 min cache) | `gdacs:alertlevel` Green/Orange/Red, `gdacs:iso3` (alleen 1e land!) + `gdacs:country` (alle namen) | **voorwaarden nog verifiëren** (vrij gebruik met bronvermelding) |
 
 - GDACS: groen alleen < 72 u en nooit droogte (ruis); afgelopen events > 7 dagen weg. Tegel krijgt een badge bij
@@ -125,10 +124,10 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 
 - De JSON-API van de VS (`cadataapi.state.gov/api/TravelAdvisories`) is sinds sept. 2026 leeg; de RSS-feed werkt.
   travel.state.gov zit achter Cloudflare: nooit omzeilen (geen nep-user-agent). Bij 403: bron tijdelijk niet beschikbaar.
-- AU: de RSS-feed liep live vast (time-out, ook na 30 s). DFAT heeft een officiële export
-  `smartraveller.gov.au/destinations-export` (formaat onbekend); Sources-pagina toont een diagnose (status,
-  type, begin van het antwoord) om daar een parser op te bouwen. `unreachable` toont nu ook de cURL-fout.
-- Hele feeds (VS, CA, AU, AA-lijst) worden één keer opgehaald en gedeeld gecachet (`sources()` → `cached('feed:…')`), time-out 30 s (AU-feed is traag).
+- **Australië (DFAT/Smartraveller) bewust verwijderd** (0.9.0, sept. 2026): de RSS-feed gaf de server live geen
+  antwoord ("0 bytes received" na 30 s) en is voor Peters doelgroep weinig relevant. Officiële export bestaat
+  (`smartraveller.gov.au/destinations-export`, formaat onbekend) als het later toch nodig is.
+- Hele feeds (VS, CA, AA-lijst) worden één keer opgehaald en gedeeld gecachet (`sources()` → `cached('feed:…')`), time-out 30 s.
 - Landnamen in feeds wijken af ("Burma (Myanmar)", "Mainland China, Hong Kong & Macau", "Türkiye"):
   `Sources::name_matches()` + `alt`-aliassen in countries.json. Bij een nieuw land zonder treffer: alias toevoegen + test.
 - **Consensus:** uitgeklapte tegel toont het meest genoemde landelijke niveau over alle overheden (gelijkspel → strenger)
@@ -141,7 +140,7 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 
 ## API (travel-risk/v1)
 
-`GET advice/{ISO3}?source=` (buza|fcdo|aa|usdos|gac|dfat; `?lang=` = standaardbron), `GET alerts` (alle actuele GDACS-events met onze ISO3-codes; 404 `alerts_disabled` als uit), `GET news/{ISO3}` (404 `news_disabled` als uit), `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`), `POST login`,
+`GET advice/{ISO3}?source=` (buza|fcdo|aa|usdos|gac; `?lang=` = standaardbron), `GET alerts` (alle actuele GDACS-events met onze ISO3-codes; 404 `alerts_disabled` als uit), `GET news/{ISO3}` (404 `news_disabled` als uit), `GET|PUT|DELETE me` (PUT ook `notifyEmail`, `source`), `POST login`,
 `POST login/verify` (`token` of `email`+`code`), `POST logout`, `GET push/key`, `POST|DELETE push`, `POST push/test`. Foutcodes als korte string (`rate_limited`, `not_found`, ...), vertaald in app.js.
 Cache: transients, alleen succesvolle antwoorden, standaard 60 min. GDELT-aanroepen minimaal 6 s uit elkaar.
 
@@ -180,7 +179,7 @@ gevolgde landen (max. 30 per run, 6 s uit elkaar) tijdens de uurlijkse controle.
    echte pushdienst: eerste keer live testen met de knop "Testmelding sturen".
 2. Echte bronnen valideren tegen live data (in deze ontwikkelomgeving was internet dicht): GOV.UK-slugs,
    AA-veldnamen, BuZa-teksten van alle landen door `buza_levels` halen en afwijkingen als test vastleggen;
-   US/AU-landnamen tegen `name_matches()` (ontbrekende treffers → alias); licenties buza/aa/dfat bevestigen.
+   US-landnamen tegen `name_matches()` (ontbrekende treffers → alias); licenties buza/aa bevestigen.
 3. Nieuws: route A gebouwd (0.8.0). Eventueel later een betaalde nieuws-API met licentie of professionele
    risicodata (Riskline, Crisis24). GDACS-voorwaarden en "laatste wijziging"-velden live controleren.
 7. Dagelijks wereldoverzicht (voorstel sept. 2026, nog niet bevestigd): alle landen/bronnen 1× per dag,

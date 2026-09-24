@@ -28,7 +28,7 @@
       adviceFrom: 'Advice from',
       adviceHint: 'Choose the government whose advice you follow, usually that of your nationality or your employer. It applies to all countries and to notifications.',
       otherSources: 'Other governments', inLanguage: 'Summary in {lang}.', followSource: 'Follow the advice of {source} (for all countries)', basis: 'Why this level',
-      sourceLang: { buza: 'Dutch', fcdo: 'English', aa: 'German', usdos: 'English', gac: 'English', dfat: 'English' },
+      sourceLang: { buza: 'Dutch', fcdo: 'English', aa: 'German', usdos: 'English', gac: 'English' },
       consensus: '{n} governments: most say “{most}”; strictest “{max}” ({who}).', regionalUnknown: 'Stricter advice applies to parts of the country. Check the regional details in the full advice.', regionalBadge: 'Regional warnings',
       latest: 'Latest update', recentBadge: 'Recently updated',
       gdacsTitle: 'Disaster alerts (GDACS)', gdacsNone: 'No current disaster alerts.', gdacsLang: 'Alert texts in English.',
@@ -104,7 +104,7 @@
       adviceFrom: 'Hinweise von',
       adviceHint: 'Wählen Sie die Regierung, deren Hinweisen Sie folgen, meist die Ihrer Staatsangehörigkeit oder Ihres Arbeitgebers. Gilt für alle Länder und Benachrichtigungen.',
       otherSources: 'Andere Regierungen', inLanguage: 'Zusammenfassung auf {lang}.', followSource: 'Hinweisen von {source} folgen (für alle Länder)', basis: 'Grundlage',
-      sourceLang: { buza: 'Niederländisch', fcdo: 'Englisch', aa: 'Deutsch', usdos: 'Englisch', gac: 'Englisch', dfat: 'Englisch' },
+      sourceLang: { buza: 'Niederländisch', fcdo: 'Englisch', aa: 'Deutsch', usdos: 'Englisch', gac: 'Englisch' },
       consensus: '{n} Regierungen: die meisten sagen „{most}“; am strengsten „{max}“ ({who}).', regionalUnknown: 'Für Teile des Landes gelten strengere Hinweise. Prüfen Sie die regionalen Angaben im vollständigen Hinweis.', regionalBadge: 'Regionale Warnungen',
       latest: 'Letzte Änderung', recentBadge: 'Kürzlich geändert',
       gdacsTitle: 'Katastrophenwarnungen (GDACS)', gdacsNone: 'Keine aktuellen Katastrophenwarnungen.', gdacsLang: 'Warntexte auf Englisch.',
@@ -181,7 +181,7 @@
       adviceFrom: 'Advies van',
       adviceHint: 'Kies de overheid waarvan je het advies volgt, meestal die van je nationaliteit of werkgever. Geldt voor alle landen en voor meldingen.',
       otherSources: 'Andere overheden', inLanguage: 'Samenvatting in het {lang}.', followSource: 'Advies van {source} volgen (voor alle landen)', basis: 'Waarom dit niveau',
-      sourceLang: { buza: 'Nederlands', fcdo: 'Engels', aa: 'Duits', usdos: 'Engels', gac: 'Engels', dfat: 'Engels' },
+      sourceLang: { buza: 'Nederlands', fcdo: 'Engels', aa: 'Duits', usdos: 'Engels', gac: 'Engels' },
       consensus: '{n} overheden: de meeste zeggen ‘{most}’; strengst ‘{max}’ ({who}).', regionalUnknown: 'Voor delen van het land geldt een strenger advies. Bekijk de regionale details in het volledige advies.', regionalBadge: 'Regionale waarschuwingen',
       latest: 'Laatste wijziging', recentBadge: 'Recent gewijzigd',
       gdacsTitle: 'Rampenmeldingen (GDACS)', gdacsNone: 'Geen actuele rampenmeldingen.', gdacsLang: 'Meldingsteksten in het Engels.',
@@ -241,7 +241,7 @@
   const LOCALE = { en: 'en-GB', de: 'de-DE', nl: 'nl-NL' };
   const SOURCE = cfg.sources;             // id -> full name, from Sources::NAMES
   const SOURCES = Object.keys(SOURCE);
-  const SOURCE_SHORT = { buza: 'NL', fcdo: 'UK', aa: 'DE', usdos: 'US', gac: 'CA', dfat: 'AU' };
+  const SOURCE_SHORT = { buza: 'NL', fcdo: 'UK', aa: 'DE', usdos: 'US', gac: 'CA' };
 
   // Default advice source from the browser's language/region settings; no location is used.
   function defaultSource() {
@@ -253,7 +253,6 @@
       if (region === 'GB' || region === 'UK') return 'fcdo';
       if (region === 'US') return 'usdos';
       if (region === 'CA') return 'gac';
-      if (region === 'AU') return 'dfat';
     }
     return 'fcdo';
   }
@@ -1054,6 +1053,7 @@
 
     const localSource = SOURCES.includes(store.get(KEY.source)) ? store.get(KEY.source) : null;
     state.source = localSource || (SOURCES.includes(me.source) ? me.source : defaultSource());
+    if (store.get(KEY.source) && !localSource) store.set(KEY.source, state.source); // e.g. a source that was removed
     if (me.loggedIn && me.source !== state.source) api('PUT', 'me', { source: state.source }).catch(() => {});
 
     if (me.loggedIn) {

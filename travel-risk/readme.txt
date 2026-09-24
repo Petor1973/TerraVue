@@ -1,7 +1,7 @@
 === Terravue – Travel Risk Monitor ===
 Requires at least: 6.4
 Requires PHP: 8.0
-Stable tag: 0.8.2
+Stable tag: 0.9.0
 License: Proprietary
 
 Official travel advice and disaster alerts per country, as an installable web app (PWA).
@@ -18,9 +18,9 @@ Users pick the countries they care about and see, per country:
 * optionally, recent security-related news (GDELT; off by default).
 
 Users choose whose government advice they follow (usually their nationality or employer): the
-Netherlands, the United Kingdom, Germany, the United States, Canada or Australia. This is
+Netherlands, the United Kingdom, Germany, the United States or Canada. This is
 independent of the interface language; the default comes from the browser's region setting, never from
-the device location. An opened country shows the other five governments' levels and a consensus (most common level and
+the device location. An opened country shows the other four governments' levels and a consensus (most common level and
 the strictest, with the governments that give it).
 The interface is English by default, with German and Dutch.
 
@@ -61,7 +61,6 @@ Attribution for each source is shown in the app footer. The app is not affiliate
 * UK – GOV.UK Content API: contains public sector information licensed under the Open Government Licence v3.0.
 * United States – Department of State travel advisories (RSS): public domain; attribution given.
 * Canada – Travel Advice and Advisories (open data): Open Government Licence – Canada.
-* Australia – Smartraveller (RSS): check the Smartraveller copyright terms before commercial use.
 * Germany – Auswärtiges Amt open data: check the terms before commercial use.
 * Netherlands – Ministerie van Buitenlandse Zaken open data: check the terms before commercial use.
 * GDACS (European Commission and United Nations) – disaster alerts: free use with attribution; check the terms.

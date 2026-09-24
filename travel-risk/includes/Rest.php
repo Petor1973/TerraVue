@@ -2,7 +2,7 @@
 /**
  * REST API, namespace travel-risk/v1.
  *
- *   GET    /advice/{ISO3}?source=   Travel advice from buza | fcdo | aa | usdos | gac | dfat (or ?lang= for its default source)
+ *   GET    /advice/{ISO3}?source=   Travel advice from buza | fcdo | aa | usdos | gac (or ?lang= for its default source)
  *   GET    /news/{ISO3}             Recent security news (only when a news provider is on)
  *   GET    /alerts                  Current GDACS disaster alerts, all listed countries
  *   GET    /me                      Signed-in state, saved countries and language

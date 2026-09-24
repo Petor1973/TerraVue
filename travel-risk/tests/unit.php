@@ -210,20 +210,8 @@ check( 'ca: advisory-state 1 -> level 2, regional flag', array( $r['level'], $r[
 check( 'ca: url and summary', array( $r['url'], $r['summary'] ), array( 'https://travel.gc.ca/destinations/saudi-arabia', 'Exercise a high degree of caution. Updated security section.' ) );
 check( 'ca: levels 1 and 4', array( Sources::parse_gac( $ca_json, $nor )['level'], Sources::parse_gac( $ca_json, $mmr )['level'] ), array( 1, 4 ) );
 
-// ---------------------------------------------------------------- Australia (Smartraveller RSS)
-$au_rss = '<rss xmlns:ta="https://www.smartraveller.gov.au"><channel>'
-	. '<item><title>Saudi Arabia</title><link>https://www.smartraveller.gov.au/destinations/middle-east/saudi-arabia</link><pubDate>Tue, 22 Sep 2026 09:00:00 GMT</pubDate>'
-	. '<description>&lt;p&gt;Exercise a high degree of caution in Saudi Arabia. Do not travel to within 10km of the border with Yemen.&lt;/p&gt;</description>'
-	. '<ta:warnings><ta:level>3/5</ta:level><ta:description>Exercise a high degree of caution</ta:description></ta:warnings></item>'
-	. '<item><title>South Korea (Republic of Korea)</title><link>https://www.smartraveller.gov.au/destinations/asia/south-korea-republic-korea</link><description>Normal.</description>'
-	. '<ta:warnings><ta:level>2/5</ta:level><ta:description>Exercise normal safety precautions</ta:description></ta:warnings></item>'
-	. '<item><title>Türkiye</title><link>https://www.smartraveller.gov.au/destinations/europe/turkiye</link><description>Reconsider your need to travel to the border with Syria.</description>'
-	. '<ta:warnings><ta:level>3/5</ta:level><ta:description>Exercise a high degree of caution</ta:description></ta:warnings></item>'
-	. '</channel></rss>';
-$r = Sources::parse_dfat( $au_rss, $sau );
-check( 'au: level from ta:description, regional "Do not travel to" -> max 4', array( $r['level'], $r['maxLevel'] ), array( 2, 4 ) );
-check( 'au: "South Korea (Republic of Korea)"', Sources::parse_dfat( $au_rss, array( 'iso3' => 'KOR', 'en' => 'South Korea' ) )['level'], 1 );
-check( 'au: "Türkiye" via alias, "Reconsider ... to" -> max 3', array_values( array_intersect_key( Sources::parse_dfat( $au_rss, array( 'iso3' => 'TUR', 'en' => 'Turkey', 'alt' => array( 'Turkiye' ) ) ), array( 'level' => 1, 'maxLevel' => 1 ) ) ), array( 2, 3 ) );
+check( 'names: "South Korea (Republic of Korea)"', Sources::name_matches( 'South Korea (Republic of Korea)', array( 'en' => 'South Korea' ) ), true );
+check( 'names: "Türkiye" via alias', Sources::name_matches( 'Türkiye', array( 'en' => 'Turkey', 'alt' => array( 'Turkiye' ) ) ), true );
 
 check( 'phrases to levels', array_map( array( Sources::class, 'level_from_phrase' ), array( 'Exercise normal safety precautions', 'Exercise a high degree of caution', 'Reconsider your need to travel', 'Avoid non-essential travel', 'Do not travel', 'Avoid all travel', 'something else' ) ), array( 1, 2, 3, 3, 4, 4, null ) );
 
@@ -354,8 +342,6 @@ $no = array( 'iso3' => 'NOR', 'iso2' => 'NO', 'en' => 'Norway' );
 $us_feed = fn( $desc ) => '<rss><channel><item><title>Norway - Level 2: Exercise Increased Caution</title><link>https://travel.state.gov/no.html</link><description>' . htmlspecialchars( $desc ) . '</description></item></channel></rss>';
 check( 'latest: usdos reissue note', Sources::parse_usdos( $us_feed( '<p>Reissued after periodic review with minor edits.</p><p>Exercise increased caution due to terrorism.</p>' ), $no )['latest'], 'Reissued after periodic review with minor edits.' );
 check( 'latest: usdos without note', Sources::parse_usdos( $us_feed( '<p>Exercise increased caution due to terrorism.</p>' ), $no )['latest'], null );
-$au_feed = '<rss xmlns:ta="x"><channel><item><title>Norway</title><link>https://www.smartraveller.gov.au/destinations/europe/norway</link><description>Latest update: We\'ve reviewed our advice for Norway. The level of our advice has not changed. Exercise normal safety precautions.</description><ta:warnings><ta:description>Exercise normal safety precautions</ta:description></ta:warnings></item></channel></rss>';
-check( 'latest: dfat two sentences after "Latest update"', Sources::parse_dfat( $au_feed, $no )['latest'], 'We\'ve reviewed our advice for Norway. The level of our advice has not changed.' );
 $aa_latest = json_encode( array( 'response' => array( '9' => array( 'content' => '<p>Letzte Änderungen: Aktualisierung im Abschnitt Sicherheit.</p><p>Landesspezifische Hinweise folgen. Weiterer Text.</p>' ) ) ) );
 check( 'latest: aa "Letzte Änderungen"', Sources::parse_aa( $aa_latest, '9' )['latest'], 'Aktualisierung im Abschnitt Sicherheit. Landesspezifische Hinweise folgen.' );
 $gac_latest = json_encode( array( 'data' => array( 'NO' => array( 'advisory-state' => 0, 'eng' => array( 'advisory-text' => 'Take normal security precautions', 'recent-updates' => '<p>Editorial change.</p>' ) ) ) ) );

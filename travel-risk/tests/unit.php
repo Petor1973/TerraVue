@@ -364,6 +364,9 @@ $buza_latest = '<d><introduction><![CDATA[<p>Het reisadvies voor Noorwegen heeft
 check( 'latest: buza "Wat is er veranderd?"', Sources::parse_buza( $buza_latest )['latest'], 'De informatie over natuurbranden is aangepast.' );
 check( 'latest: none in plain text', Sources::after_label( 'Nothing to see here.', 'Latest update' ), null );
 
+check( 'aa: lastModified in seconds (live API)', Sources::parse_aa( json_encode( array( 'response' => array( '9' => array( 'lastModified' => 1757318400 ) ) ) ), '9' )['updated'], '2025-09-08T08:00:00+00:00' );
+check( 'aa: lastModified in milliseconds (documented)', Sources::parse_aa( json_encode( array( 'response' => array( '9' => array( 'lastModified' => 1757318400000 ) ) ) ), '9' )['updated'], '2025-09-08T08:00:00+00:00' );
+
 // ---------------------------------------------------------------- GDACS disaster alerts
 $now   = 1790000000;
 $when  = fn( $s ) => gmdate( 'D, d M Y H:i:s \G\M\T', $now - $s );

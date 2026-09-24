@@ -86,6 +86,7 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 - AA: `warning` 4, `situationWarning` 3, `partialWarning` max 4, `situationPartWarning` max 3; vlaggen uit
   lijst én detail (OF). `situation*` was bedoeld voor COVID; het gewone "Von Reisen … wird abgeraten" staat
   alleen in de tekst → `aa_phrases()`: landelijk "abgeraten" = 3, "gewarnt" = 4; met gebiedswoord alleen max.
+  `lastModified` is live in **seconden** (documentatie zegt ms; gaf 1970-datums) → `Sources::epoch()` herkent beide.
 - BuZa: geen kleurveld; per zin geparsed (`Sources::buza_levels`). Zin met "grootste deel/rest van" wint;
   anders eerste zin zónder regio. Regio's ook in samenstellingen ("grensgebieden", "Gazastrook") en
   "tussen X en Y". **Bij twijfel: testgeval toevoegen** (Israël-teksten staan als voorbeeld in de tests).
@@ -124,7 +125,7 @@ bin/build-zip.sh             Maakt dist/travel-risk-<versie>.zip (zonder tests)
 
 - De JSON-API van de VS (`cadataapi.state.gov/api/TravelAdvisories`) is sinds sept. 2026 leeg; de RSS-feed werkt.
   travel.state.gov zit achter Cloudflare: nooit omzeilen (geen nep-user-agent). Bij 403: bron tijdelijk niet beschikbaar.
-- Hele feeds (VS, CA, AU, AA-lijst) worden één keer opgehaald en gedeeld gecachet (`sources()` → `cached('feed:…')`).
+- Hele feeds (VS, CA, AU, AA-lijst) worden één keer opgehaald en gedeeld gecachet (`sources()` → `cached('feed:…')`), time-out 30 s (AU-feed is traag).
 - Landnamen in feeds wijken af ("Burma (Myanmar)", "Mainland China, Hong Kong & Macau", "Türkiye"):
   `Sources::name_matches()` + `alt`-aliassen in countries.json. Bij een nieuw land zonder treffer: alias toevoegen + test.
 - **Consensus:** uitgeklapte tegel toont het meest genoemde landelijke niveau over alle overheden (gelijkspel → strenger)

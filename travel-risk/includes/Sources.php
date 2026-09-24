@@ -337,7 +337,7 @@ class Sources {
 			'basis'    => $basis,
 			'summary'  => self::shorten( $text ),
 			'url'      => 'https://www.auswaertiges-amt.de/de/ReiseUndSicherheit/reise-und-sicherheitshinweise',
-			'updated'  => is_numeric( $updated ) ? gmdate( 'c', (int) ( $updated / 1000 ) ) : self::iso_date( $updated ),
+			'updated'  => is_numeric( $updated ) ? self::epoch( $updated ) : self::iso_date( $updated ),
 			'latest'   => self::after_label( $text, 'Letzte Änderungen?' ),
 		);
 	}
@@ -547,13 +547,16 @@ class Sources {
 	// Helpers
 	// ------------------------------------------------------------------
 
+	/** Seconds for large feeds (the Australian one is slow); single pages use the default. */
+	const FEED_TIMEOUT = 30;
+
 	/** Whole feeds (US, Canada, Australia, AA list) are fetched once and shared by all countries. */
 	private function feed( string $url ): string {
 		if ( isset( $this->feeds[ $url ] ) ) {
 			return $this->feeds[ $url ];
 		}
 		$fetch = function () use ( $url ) {
-			$res = $this->get( $url );
+			$res = ( $this->http )( $url, self::FEED_TIMEOUT );
 			self::expect_ok( $res );
 			return $res['body'];
 		};
@@ -617,6 +620,18 @@ class Sources {
 	public static function slug( string $name ): string {
 		$ascii = iconv( 'UTF-8', 'ASCII//TRANSLIT//IGNORE', $name );
 		return trim( preg_replace( '/[^a-z0-9]+/', '-', strtolower( (string) $ascii ) ), '-' );
+	}
+
+	/**
+	 * Unix time to ISO date. The AA documents milliseconds, but the live API sends seconds
+	 * (read as ms that gave dates in January 1970); anything below 1e11 is taken as seconds.
+	 */
+	public static function epoch( $value ): ?string {
+		$t = (float) $value;
+		if ( $t <= 0 ) {
+			return null;
+		}
+		return gmdate( 'c', (int) ( $t > 1e11 ? $t / 1000 : $t ) );
 	}
 
 	private static function iso_date( ?string $value ): ?string {

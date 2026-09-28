@@ -10,12 +10,13 @@ Code en commentaar: Engels.
 
 ## Harde randvoorwaarden
 
-- **Volledig los van SGL / Lely / elke werkgever.** Dit is een schone herbouw: geen code, teksten, data,
-  namen, huisstijl of koppelingen (planning, SQL Server) van een werkgever gebruiken of overnemen.
+- **Volledig los van elke werkgever.** Eigen project van Peters eigen onderneming: geen code, teksten, data,
+  namen, huisstijl, koppelingen of projecten van een werkgever hierin, en werkgeversprojecten niet in deze
+  repo of sessie behandelen. Noem geen werkgever bij naam in code, documentatie of commits.
   Waarschuw Peter direct als een wijziging daar toch richting gaat (werkgeversbeleid, IE, arbeidscontract).
-  **Gebruik binnen een team op het werk** (sept. 2026 genoemd: "risico's voor onze mensen die daarheen gaan"):
-  pas na akkoord van werkgever (manager/IT/privacy officer); geen namen, reisplannen of andere
-  werkgeversdata in de app; collega's registreren zelf; de app vervangt geen travel-security-beleid of -dienst.
+  **Gebruik binnen een team op het werk:** pas na akkoord van de werkgever (manager/IT/privacy officer);
+  geen namen, reisplannen of andere werkgeversdata in de app; collega's registreren zelf; de app vervangt
+  geen travel-security-beleid of -dienst.
 - **AVG.** Persoonsgegevens beperkt tot: e-mailadres (WordPress-gebruiker), tijdstip van toestemming,
   gekozen landen, taal, gekozen adviesbron, en — alleen als de gebruiker ze aanzet — push-abonnementen per apparaat
   (endpoint + sleutels), de keuze voor e-mailmeldingen en het uur (UTC) van het dagelijks wereldoverzicht + tijdstip laatst verstuurd. Nieuwe persoonsgegevens (bv. locatie, telefoonnummer) alleen

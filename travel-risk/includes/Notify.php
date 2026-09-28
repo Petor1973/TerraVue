@@ -323,25 +323,76 @@ class Notify {
 		return $result;
 	}
 
-	/** @return array{sent:int, failed:int} */
+	/** Human name of the push service behind an endpoint, for the admin (which browser/phone it is). */
+	public static function service( string $endpoint ): string {
+		$host = strtolower( (string) wp_parse_url( $endpoint, PHP_URL_HOST ) );
+		foreach ( array(
+			'push.apple.com'            => 'Apple (iPhone/iPad app, Safari)',
+			'googleapis.com'            => 'Google (Chrome, Android)',
+			'push.services.mozilla.com' => 'Mozilla (Firefox)',
+			'notify.windows.com'        => 'Microsoft (Edge)',
+		) as $suffix => $name ) {
+			if ( $host === $suffix || str_ends_with( $host, '.' . $suffix ) ) {
+				return $name;
+			}
+		}
+		return $host;
+	}
+
+	/**
+	 * Sends to every device of the user and remembers each push service's answer on the device
+	 * (`last`: time, HTTP status, short reason), so the admin can see why a phone gets nothing.
+	 *
+	 * @return array{sent:int, failed:int, devices:array<int, array{service:string, code:int, reason:string}>}
+	 */
 	public static function push_user( int $user_id, array $message ): array {
 		$payload = wp_json_encode( $message + array( 'url' => Pwa::start_url() ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		$vapid   = self::vapid();
-		$result  = array( 'sent' => 0, 'failed' => 0 );
+		$result  = array( 'sent' => 0, 'failed' => 0, 'devices' => array() );
+		$updated = array();
+		$dropped = array();
 		foreach ( self::devices( $user_id ) as $device ) {
-			$req = WebPush::request( $device, $payload, $vapid );
-			$res = wp_safe_remote_post( $req['url'], array( 'headers' => $req['headers'], 'body' => $req['body'], 'timeout' => 10 ) );
-			$code = is_wp_error( $res ) ? 0 : (int) wp_remote_retrieve_response_code( $res );
-			if ( $code >= 200 && $code < 300 ) {
-				$result['sent']++;
+			$req    = WebPush::request( $device, $payload, $vapid );
+			$res    = wp_safe_remote_post( $req['url'], array( 'headers' => $req['headers'], 'body' => $req['body'], 'timeout' => 10 ) );
+			$code   = is_wp_error( $res ) ? 0 : (int) wp_remote_retrieve_response_code( $res );
+			$ok     = $code >= 200 && $code < 300;
+			$reason = $ok ? '' : self::reason( $res );
+			$result[ $ok ? 'sent' : 'failed' ]++;
+			$result['devices'][] = array( 'service' => self::service( $device['endpoint'] ), 'code' => $code, 'reason' => $reason );
+			if ( 404 === $code || 410 === $code ) {
+				$dropped[] = $device['endpoint']; // Subscription no longer exists (app removed, permission revoked).
 				continue;
 			}
-			$result['failed']++;
-			if ( 404 === $code || 410 === $code ) {
-				// Subscription no longer exists (app removed, permission revoked).
-				self::remove_device( $user_id, $device['endpoint'] );
-			}
+			$updated[ $device['endpoint'] ] = array( 'at' => gmdate( 'c' ), 'code' => $code, 'reason' => $reason );
 		}
+		// Re-read before writing, so a device added or removed while we were sending is neither lost nor revived.
+		$list = array();
+		foreach ( self::devices( $user_id ) as $device ) {
+			if ( in_array( $device['endpoint'], $dropped, true ) ) {
+				continue;
+			}
+			if ( isset( $updated[ $device['endpoint'] ] ) ) {
+				$device['last'] = $updated[ $device['endpoint'] ];
+			}
+			$list[] = $device;
+		}
+		$list ? update_user_meta( $user_id, self::META_PUSH, $list ) : delete_user_meta( $user_id, self::META_PUSH );
 		return $result;
+	}
+
+	/** Short, printable reason for a failed push: the service's own error text, or the connection error. */
+	private static function reason( $res ): string {
+		if ( is_wp_error( $res ) ) {
+			return 'connection: ' . $res->get_error_message();
+		}
+		$body = trim( wp_strip_all_tags( (string) wp_remote_retrieve_body( $res ) ) );
+		$json = json_decode( $body, true );
+		if ( is_array( $json ) ) {
+			// Apple: {"reason":"BadJwtToken"}; Mozilla: {"message":...,"errno":...}; Google: {"error":{"message":...}}.
+			$said = $json['reason'] ?? $json['message'] ?? $json['error']['message'] ?? $json['error'] ?? null;
+			$body = is_scalar( $said ) ? (string) $said : $body;
+		}
+		$body = preg_replace( '/\s+/', ' ', $body );
+		return mb_substr( '' !== $body ? $body : (string) wp_remote_retrieve_response_message( $res ), 0, 160 );
 	}
 }

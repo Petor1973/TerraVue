@@ -19,7 +19,7 @@ Code en commentaar: Engels.
   geen travel-security-beleid of -dienst.
 - **AVG.** Persoonsgegevens beperkt tot: e-mailadres (WordPress-gebruiker), tijdstip van toestemming,
   gekozen landen, taal, gekozen adviesbron, en — alleen als de gebruiker ze aanzet — push-abonnementen per apparaat
-  (endpoint + sleutels), de keuze voor e-mailmeldingen en het uur (UTC) van het dagelijks wereldoverzicht + tijdstip laatst verstuurd. Nieuwe persoonsgegevens (bv. locatie, telefoonnummer) alleen
+  (endpoint + sleutels + laatste antwoord van de pushdienst: tijd, status, korte reden), de keuze voor e-mailmeldingen en het uur (UTC) van het dagelijks wereldoverzicht + tijdstip laatst verstuurd. Nieuwe persoonsgegevens (bv. locatie, telefoonnummer) alleen
   na expliciete afweging, met privacytekst, exporter/eraser en bewaartermijn. **Geen locatietracking.**
   Geen externe fonts/CDN's/analytics in de frontend (geen IP-lekken naar derden).
 - **Registratie** is double opt-in via magic link of 6-cijferige code (zelfde mail; code voor de
@@ -62,6 +62,9 @@ Code en commentaar: Engels.
   opnieuw via accountmenu of Instellingen. Stappen zonder doel (nog geen tegels, niet ingelogd) vallen weg. Op
   telefoons komt de installatiekaart pas ná de rondleiding. Esc sluit.
 - **Testmeldingen alleen in het beheer** (Terravue → Notifications, WP-CLI), niet in de app; de REST-route `push/test` is weg.
+  Het beheer toont per apparaat de pushdienst (Apple/Google/Mozilla/Microsoft), wanneer toegevoegd en het laatste
+  antwoord (bv. `403 BadJwtToken`); de testmelding meldt dat per apparaat. Beheerders/redacteuren krijgen daar de
+  uitleg dat ze niet via link/code in de app kunnen inloggen (er gaat dan geen mail uit) en op de telefoon een ander adres gebruiken.
 
 ## Structuur
 

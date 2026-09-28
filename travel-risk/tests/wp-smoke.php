@@ -189,8 +189,39 @@ add_filter( 'pre_http_request', function ( $pre, $args, $url ) {
 
 ok( 'no test-push route in the app (admin tools only)', 404 === call( 'POST', 'push/test' )->get_status() );
 $r = TravelRisk\Notify::push_user( $user->ID, array( 'title' => 'Notifications are working', 'body' => 'Test' ) );
-ok( 'push: 1 sent, 1 gone', array( 'sent' => 1, 'failed' => 1 ) === $r, $r );
+ok( 'push: 1 sent, 1 gone', 1 === $r['sent'] && 1 === $r['failed'], $r );
+ok( 'push: outcome per device, named by service', array( array( 'Apple (iPhone/iPad app, Safari)', 410 ), array( 'Google (Chrome, Android)', 201 ) )
+	=== array_map( fn( $d ) => array( $d['service'], $d['code'] ), $r['devices'] ), $r['devices'] );
 ok( 'gone device removed', 1 === call( 'GET', 'me' )->get_data()['pushDevices'] );
+$d = TravelRisk\Notify::devices( $user->ID )[0];
+ok( 'last answer kept on the device', 201 === $d['last']['code'] && '' === $d['last']['reason'] && strtotime( $d['last']['at'] ) > time() - 60, $d );
+
+// A refusal keeps the device and records the push service's own reason.
+$refuse = function ( $pre, $args, $url ) {
+	if ( ! str_contains( $url, 'fcm.googleapis.com' ) ) {
+		return $pre;
+	}
+	return array( 'headers' => array(), 'body' => '{"reason":"BadJwtToken"}', 'response' => array( 'code' => 403, 'message' => 'Forbidden' ), 'cookies' => array(), 'filename' => null );
+};
+add_filter( 'pre_http_request', $refuse, 10, 3 ); // after the capturing filter (5), which answers 201
+$r = TravelRisk\Notify::push_user( $user->ID, array( 'title' => 'x', 'body' => 'y' ) );
+remove_filter( 'pre_http_request', $refuse, 10 );
+$d = TravelRisk\Notify::devices( $user->ID );
+ok( 'refused push: device kept, reason recorded', 1 === count( $d ) && 403 === $d[0]['last']['code'] && 'BadJwtToken' === $d[0]['last']['reason'] && 'BadJwtToken' === $r['devices'][0]['reason'], $d );
+ob_start();
+TravelRisk\Admin::notifications_page();
+$html = ob_get_clean();
+ok( 'admin page lists devices with last answer', str_contains( $html, 'Google (Chrome, Android)' ) && str_contains( $html, '403 BadJwtToken' ) && ! str_contains( $html, 'cannot sign in to the app' ) );
+$staff = wp_insert_user( array( 'user_login' => 'smoke_editor', 'user_email' => 'editor@example.org', 'user_pass' => wp_generate_password(), 'role' => 'editor' ) );
+wp_set_current_user( $staff );
+ob_start();
+TravelRisk\Admin::notifications_page();
+$html = ob_get_clean();
+wp_set_current_user( $user->ID );
+wp_delete_user( $staff );
+ok( 'admin page tells staff to use another address in the app', str_contains( $html, 'cannot sign in to the app with a link or code' ) );
+ok( 'push service names','Mozilla (Firefox)' === TravelRisk\Notify::service( 'https://updates.push.services.mozilla.com/wpush/v2/x' )
+	&& 'Microsoft (Edge)' === TravelRisk\Notify::service( 'https://wns2-par02p.notify.windows.com/w/?token=x' ) );
 $p = $GLOBALS['travel_risk_pushes'][0];
 ok( 'push request is encrypted and signed', 'aes128gcm' === $p['args']['headers']['Content-Encoding'] && str_starts_with( $p['args']['headers']['Authorization'], 'vapid t=' ) && ! str_contains( $p['args']['body'], 'Notifications' ) );
 

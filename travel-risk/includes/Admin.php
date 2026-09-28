@@ -237,9 +237,29 @@ class Admin {
 		}
 		$r = Notify::simulate( $user->ID, $country );
 		self::back( self::NOTIFICATIONS, sprintf(
-			'Test notification for %s to %s: push sent to %d device(s), %d failed; e-mail %s.',
-			$country['en'], $user->user_email, $r['push']['sent'], $r['push']['failed'], $r['email'] ? 'sent' : 'not sent (e-mail notifications are off for that account)'
+			'Test notification for %s to %s: push sent to %d device(s), %d failed%s; e-mail %s.%s',
+			$country['en'], $user->user_email, $r['push']['sent'], $r['push']['failed'], self::per_device( $r['push']['devices'] ),
+			$r['email'] ? 'sent' : 'not sent (e-mail notifications are off for that account)',
+			$r['push']['devices'] ? '' : ' That account has no device with push: sign in to the app on the phone with this address and turn on push under Notifications.'
 		) );
+	}
+
+	/** " (Apple: OK, Google: 403 BadJwtToken)" for the notice after a test. */
+	private static function per_device( array $devices ): string {
+		if ( ! $devices ) {
+			return '';
+		}
+		return ' (' . implode( ', ', array_map( fn( $d ) => $d['service'] . ': ' . self::outcome( $d['code'], $d['reason'] ), $devices ) ) . ')';
+	}
+
+	private static function outcome( int $code, string $reason ): string {
+		if ( $code >= 200 && $code < 300 ) {
+			return 'OK';
+		}
+		if ( 404 === $code || 410 === $code ) {
+			return $code . ' subscription expired, device removed';
+		}
+		return trim( ( $code ? $code : 'no answer' ) . ' ' . $reason );
 	}
 
 	/** Sends the daily world overview now to one account (own or given address), even if empty. */
@@ -256,7 +276,7 @@ class Admin {
 
 	public static function notifications_page(): void {
 		$user    = get_current_user_id();
-		$devices = count( Notify::devices( $user ) );
+		$devices = Notify::devices( $user );
 		$email   = '1' === get_user_meta( $user, Notify::META_EMAIL, true );
 		$stats   = get_option( Notify::OPT_LAST_STATS );
 		$last    = (int) get_option( Notify::OPT_LAST );
@@ -312,7 +332,11 @@ class Admin {
 				<li>Send a test below. It goes to <strong>one account</strong> (yours, or the address you enter) and to all devices with push on for that account. Other users and the baseline are not affected.</li>
 			</ol>
 			<p class="description">Push is stored per account: a phone signed in with another e-mail address than this admin account does not receive tests sent to you. Enter that address to reach it.</p>
-			<p>Your account: <strong><?php echo (int) $devices; ?></strong> device(s) with push, e-mail notifications <strong><?php echo $email ? 'on' : 'off'; ?></strong>.</p>
+			<?php if ( current_user_can( 'edit_posts' ) ) : ?>
+				<p class="description"><strong>Admin and editor accounts cannot sign in to the app with a link or code</strong> (for safety no e-mail is sent to them at all). In a browser where you are signed in to WordPress the app works with this account; the installed app on a phone has its own cookies, so sign in there with another e-mail address and send tests to that address.</p>
+			<?php endif; ?>
+			<p>Your account: <strong><?php echo (int) count( $devices ); ?></strong> device(s) with push, e-mail notifications <strong><?php echo $email ? 'on' : 'off'; ?></strong>.</p>
+			<?php self::device_table( $devices ); ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="travel_risk_test_change">
 				<?php wp_nonce_field( 'travel_risk_test_change' ); ?>
@@ -322,6 +346,27 @@ class Admin {
 			</form>
 			<p class="description">From the command line: <code>wp travel-risk check</code> and <code>wp travel-risk test-notify --to=&lt;id|email&gt; --country=ISR</code>.</p>
 		</div>
+		<?php
+	}
+
+	/** Which push services this account's devices use, when they were added and what the last push got back. */
+	private static function device_table( array $devices ): void {
+		?>
+		<?php if ( $devices ) : ?>
+		<table class="widefat striped" style="max-width:900px">
+			<thead><tr><th>Push service</th><th>Added</th><th>Last push</th></tr></thead>
+			<tbody>
+			<?php foreach ( $devices as $d ) : ?>
+				<tr>
+					<td><?php echo esc_html( Notify::service( $d['endpoint'] ) ); ?></td>
+					<td><?php echo esc_html( isset( $d['created'] ) ? human_time_diff( strtotime( $d['created'] ) ) . ' ago' : '–' ); ?></td>
+					<td><?php echo esc_html( isset( $d['last'] ) ? human_time_diff( strtotime( $d['last']['at'] ) ) . ' ago: ' . self::outcome( (int) $d['last']['code'], (string) $d['last']['reason'] ) : 'not sent yet' ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php endif; ?>
+		<p class="description">An iPhone or iPad only shows up here as "Apple" after signing in and turning on push <em>inside the app on the home screen</em> (iOS 16.4 or later); Safari itself cannot receive push on iOS.</p>
 		<?php
 	}
 

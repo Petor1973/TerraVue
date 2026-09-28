@@ -63,6 +63,9 @@ class Cli {
 			\WP_CLI::error( 'Unknown country.' );
 		}
 		$r = Notify::simulate( $user->ID, $country );
+		foreach ( $r['push']['devices'] as $d ) {
+			\WP_CLI::log( sprintf( '  %s: %s', $d['service'], $d['code'] >= 200 && $d['code'] < 300 ? 'OK' : trim( ( $d['code'] ? $d['code'] : 'no answer' ) . ' ' . $d['reason'] ) ) );
+		}
 		\WP_CLI::success( sprintf( 'Push sent to %d device(s), %d failed; e-mail %s.', $r['push']['sent'], $r['push']['failed'], $r['email'] ? 'sent' : 'not sent (off)' ) );
 	}
 }
